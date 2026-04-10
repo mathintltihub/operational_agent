@@ -8,7 +8,10 @@ from datetime import datetime
 from pathlib import Path
 from langchain_openai import ChatOpenAI
 
-OPENAI_API_KEY = "REMOVED"
+import os
+from dotenv import load_dotenv
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 
 class TicketAnalyzer:
