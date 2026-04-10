@@ -130,5 +130,231 @@
       "timestamp": "2026-04-10T09:51:35.959700"
     },
     "timestamp": "2026-04-10T09:51:35.959700"
+  },
+  {
+    "ticket_id": "ticket-fc515fce",
+    "title": "Application crash on startup",
+    "description": "The mobile app crashes immediately after opening. Version 2.5.0 was released yesterday. We've received 200+ crash reports. iOS and Android both affected.",
+    "analysis_result": {
+      "ticket_id": "ticket-fc515fce",
+      "issue_type": "application",
+      "priority": "high",
+      "impacted_area": "Application service",
+      "recommended_team": "Application Support",
+      "troubleshooting_steps": [
+        "Check application logs for errors",
+        "Verify deployment status",
+        "Review recent code changes",
+        "Test application endpoints"
+      ],
+      "confidence_score": 0.75,
+      "reasoning_summary": "The ticket mentions keywords related to application issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:03:26.249552"
+    },
+    "timestamp": "2026-04-10T10:03:26.249552"
+  },
+  {
+    "ticket_id": "ticket-b667be7a",
+    "title": "Production application returns HTTP 500",
+    "description": "The production web application is returning HTTP 500 errors to all users. The error started at 9 AM today. Users cannot access the dashboard. We deployed a new version last night but rolled back but issue persists.",
+    "analysis_result": {
+      "ticket_id": "ticket-b667be7a",
+      "issue_type": "application",
+      "priority": "critical",
+      "impacted_area": "Application service",
+      "recommended_team": "Application Support",
+      "troubleshooting_steps": [
+        "Check application logs for errors",
+        "Verify deployment status",
+        "Review recent code changes",
+        "Test application endpoints"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The ticket mentions keywords related to application issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:03:31.392347"
+    },
+    "timestamp": "2026-04-10T10:03:31.392347"
+  },
+  {
+    "ticket_id": "ticket-0b051458",
+    "title": "Database connection timeout from application",
+    "description": "Database connection timeout from application",
+    "analysis_result": {
+      "ticket_id": "ticket-0b051458",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database connectivity",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server availability and status",
+        "Verify network connectivity to database server",
+        "Review database connection pool settings",
+        "Check recent database logs for errors"
+      ],
+      "confidence_score": 0.75,
+      "reasoning_summary": "The ticket mentions keywords related to database issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:08:13.882741"
+    },
+    "timestamp": "2026-04-10T10:08:13.882741"
+  },
+  {
+    "ticket_id": "ticket-ede43d43",
+    "title": "hello buddy",
+    "description": "hello buddy",
+    "analysis_result": {
+      "ticket_id": "ticket-ede43d43",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unknown",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request more specific information",
+        "Escalate to team lead for review"
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "The ticket mentions keywords related to unknown issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:08:34.978652"
+    },
+    "timestamp": "2026-04-10T10:08:34.978652"
+  },
+  {
+    "ticket_id": "ticket-81a27c46",
+    "title": "hi ther",
+    "description": "hi ther",
+    "analysis_result": {
+      "ticket_id": "ticket-81a27c46",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unknown",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request more specific information",
+        "Escalate to team lead for review"
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "The ticket mentions keywords related to unknown issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:08:45.707953"
+    },
+    "timestamp": "2026-04-10T10:08:45.707953"
+  },
+  {
+    "ticket_id": "ticket-b8ff7237",
+    "title": "jd",
+    "description": "jd",
+    "analysis_result": {
+      "ticket_id": "ticket-b8ff7237",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unknown",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request more specific information",
+        "Escalate to team lead for review"
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "The ticket mentions keywords related to unknown issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:08:47.311876"
+    },
+    "timestamp": "2026-04-10T10:08:47.311876"
+  },
+  {
+    "ticket_id": "ticket-bd1afe27",
+    "title": "dfg",
+    "description": "dfg",
+    "analysis_result": {
+      "ticket_id": "ticket-bd1afe27",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unknown",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request more specific information",
+        "Escalate to team lead for review"
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "The ticket mentions keywords related to unknown issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:08:48.229182"
+    },
+    "timestamp": "2026-04-10T10:08:48.229182"
+  },
+  {
+    "ticket_id": "ticket-a4ba0f38",
+    "title": "fg",
+    "description": "fg",
+    "analysis_result": {
+      "ticket_id": "ticket-a4ba0f38",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unknown",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request more specific information",
+        "Escalate to team lead for review"
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "The ticket mentions keywords related to unknown issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:08:49.220039"
+    },
+    "timestamp": "2026-04-10T10:08:49.220039"
+  },
+  {
+    "ticket_id": "ticket-8fa7771d",
+    "title": "rtg",
+    "description": "rtg",
+    "analysis_result": {
+      "ticket_id": "ticket-8fa7771d",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unknown",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request more specific information",
+        "Escalate to team lead for review"
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "The ticket mentions keywords related to unknown issues, leading to this classification.",
+      "timestamp": "2026-04-10T10:08:50.397033"
+    },
+    "timestamp": "2026-04-10T10:08:50.397033"
+  },
+  {
+    "ticket_id": "ticket-d433f947",
+    "title": "Production database server is down, all applicatio",
+    "description": "Production database server is down, all applications failing",
+    "analysis_result": {
+      "ticket_id": "ticket-d433f947",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T10:10:55.580374"
+    },
+    "timestamp": "2026-04-10T10:10:55.580374"
+  },
+  {
+    "ticket_id": "ticket-53789e65",
+    "title": "Production database server is down, all applicatio",
+    "description": "Production database server is down, all applications failing",
+    "analysis_result": {
+      "ticket_id": "ticket-53789e65",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T10:11:33.354778"
+    },
+    "timestamp": "2026-04-10T10:11:33.354778"
   }
 ]

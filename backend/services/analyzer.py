@@ -72,6 +72,8 @@ class TicketAnalyzer:
 
     def _parse_json_response(self, content: str) -> dict:
         """Parse JSON from LLM response."""
+        import re
+
         # Try to find JSON in the response
         content = content.strip()
 
@@ -79,13 +81,24 @@ class TicketAnalyzer:
         if "```json" in content:
             content = content.split("```json")[1].split("```")[0]
         elif "```" in content:
-            content = content.split("```")[1].split("```")[0]
+            parts = content.split("```")
+            if len(parts) >= 2:
+                content = parts[1]
         elif content.startswith("```"):
             content = content[3:]
             if content.endswith("```"):
                 content = content[:-3]
 
+        # Try to extract JSON object using regex
+        json_match = re.search(r'\{[\s\S]*\}', content)
+        if json_match:
+            content = json_match.group(0)
+
         content = content.strip()
+
+        # Clean up any remaining whitespace or newlines
+        content = re.sub(r'^\s*\n+', '', content)
+        content = re.sub(r'\n+\s*$', '', content)
 
         return json.loads(content)
 

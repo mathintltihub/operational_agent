@@ -3,135 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operations Agent</title>
+    <title>Operations Agent - Chatbot</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
+    <div class="chat-container">
+        <header class="chat-header">
             <div class="logo">
                 <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                     <path d="M2 17l10 5 10-5"/>
                     <path d="M2 12l10 5 10-5"/>
                 </svg>
-                <h1>Operations Agent</h1>
+                <div class="logo-text">
+                    <h1>Operations Agent</h1>
+                    <span class="status-badge">
+                        <span class="status-dot"></span>
+                        <span id="status-text">Online</span>
+                    </span>
+                </div>
             </div>
-            <p class="tagline">IT Operations Ticket Triage System</p>
+            <button id="clear-chat-btn" class="btn btn-icon" title="Clear Chat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18"/>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+            </button>
         </header>
 
-        <main class="main-content">
-            <section class="input-section">
-                <div class="form-group">
-                    <label for="ticket-title">Ticket Title</label>
-                    <input
-                        type="text"
-                        id="ticket-title"
-                        placeholder="e.g., Unable to connect to production database"
-                        maxlength="500"
-                    >
+        <div class="chat-messages" id="chat-messages">
+            <div class="message assistant-message">
+                <div class="message-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H3"/>
+                    </svg>
                 </div>
-
-                <div class="form-group">
-                    <label for="ticket-description">Description</label>
-                    <textarea
-                        id="ticket-description"
-                        placeholder="Describe the issue in detail..."
-                        rows="6"
-                        maxlength="5000"
-                    ></textarea>
-                </div>
-
-                <div class="button-group">
-                    <button id="analyze-btn" class="btn btn-primary">
-                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        Analyze Ticket
-                    </button>
-                    <button id="reset-btn" class="btn btn-secondary">
-                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                            <path d="M3 3v5h5"/>
-                        </svg>
-                        Reset
-                    </button>
-                </div>
-            </section>
-
-            <section class="sample-section">
-                <h3>Sample Tickets</h3>
-                <div class="sample-tickets" id="sample-tickets">
-                    <!-- Populated by JavaScript -->
-                </div>
-            </section>
-
-            <section class="results-section" id="results-section">
-                <h2>Analysis Results</h2>
-
-                <div class="status-area" id="status-area">
-                    <div class="loading" id="loading">
-                        <div class="spinner"></div>
-                        <span>Analyzing ticket...</span>
-                    </div>
-                    <div class="error-message" id="error-message"></div>
-                </div>
-
-                <div class="result-cards" id="result-cards">
-                    <div class="result-card primary">
-                        <div class="card-label">Ticket ID</div>
-                        <div class="card-value" id="ticket-id">-</div>
-                    </div>
-
-                    <div class="result-card">
-                        <div class="card-label">Issue Type</div>
-                        <div class="card-value" id="issue-type">-</div>
-                    </div>
-
-                    <div class="result-card priority">
-                        <div class="card-label">Priority</div>
-                        <div class="card-value" id="priority">-</div>
-                    </div>
-
-                    <div class="result-card">
-                        <div class="card-label">Impacted Area</div>
-                        <div class="card-value" id="impacted-area">-</div>
-                    </div>
-
-                    <div class="result-card team">
-                        <div class="card-label">Recommended Team</div>
-                        <div class="card-value" id="recommended-team">-</div>
-                    </div>
-
-                    <div class="result-card confidence">
-                        <div class="card-label">Confidence Score</div>
-                        <div class="card-value">
-                            <span id="confidence-score">-</span>
-                            <span class="confidence-bar">
-                                <span class="confidence-fill" id="confidence-fill"></span>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="result-card full-width">
-                        <div class="card-label">Troubleshooting Steps</div>
-                        <ul class="steps-list" id="troubleshooting-steps">
-                            <li>-</li>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        Hello! I'm your IT Operations Assistant. I can help you triage and classify support tickets.
+                        <br><br>
+                        Just describe the issue you're experiencing, and I'll analyze it to determine:
+                        <ul class="info-list">
+                            <li>Issue type (Server, Network, Database, Application, or Access)</li>
+                            <li>Priority level</li>
+                            <li>Recommended team for assignment</li>
+                            <li>Troubleshooting steps</li>
                         </ul>
+                        <br>
+                        <strong>How can I help you today?</strong>
                     </div>
-
-                    <div class="result-card full-width">
-                        <div class="card-label">Reasoning Summary</div>
-                        <div class="card-value reasoning" id="reasoning-summary">-</div>
-                    </div>
+                    <div class="message-time">Just now</div>
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
 
-        <footer class="footer">
-            <p>Operations Agent v1.0.0 | IT Operations Triage System</p>
-        </footer>
+        <div class="chat-input-area">
+            <div class="quick-actions" id="quick-actions">
+                <button class="quick-btn" data-message="Database connection timeout">Database Issue</button>
+                <button class="quick-btn" data-message="Cannot access internal network">Network Issue</button>
+                <button class="quick-btn" data-message="Application returning 500 error">App Error</button>
+                <button class="quick-btn" data-message="Need access to production server">Access Request</button>
+            </div>
+            <div class="input-wrapper">
+                <textarea
+                    id="message-input"
+                    placeholder="Describe your IT issue..."
+                    rows="1"
+                    maxlength="2000"
+                ></textarea>
+                <button id="send-btn" class="btn btn-send">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Result Modal -->
+    <div class="modal" id="analysis-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detailed Analysis</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>

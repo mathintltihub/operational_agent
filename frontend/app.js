@@ -1,225 +1,358 @@
 /**
- * Operations Agent - Frontend JavaScript
+ * Operations Agent - Chatbot Frontend
  */
 
 // API Configuration
 const API_BASE = 'http://127.0.0.1:8000';
 
 // State
-let sampleTickets = [];
+let conversationId = null;
+let isProcessing = false;
 
 // DOM Elements
 const elements = {
-    ticketTitle: document.getElementById('ticket-title'),
-    ticketDescription: document.getElementById('ticket-description'),
-    analyzeBtn: document.getElementById('analyze-btn'),
-    resetBtn: document.getElementById('reset-btn'),
-    sampleTicketsContainer: document.getElementById('sample-tickets'),
-    resultsSection: document.getElementById('results-section'),
-    loading: document.getElementById('loading'),
-    errorMessage: document.getElementById('error-message'),
-    resultCards: document.getElementById('result-cards'),
-
-    // Result fields
-    ticketId: document.getElementById('ticket-id'),
-    issueType: document.getElementById('issue-type'),
-    priority: document.getElementById('priority'),
-    impactedArea: document.getElementById('impacted-area'),
-    recommendedTeam: document.getElementById('recommended-team'),
-    confidenceScore: document.getElementById('confidence-score'),
-    confidenceFill: document.getElementById('confidence-fill'),
-    troubleshootingSteps: document.getElementById('troubleshooting-steps'),
-    reasoningSummary: document.getElementById('reasoning-summary')
+    chatMessages: document.getElementById('chat-messages'),
+    messageInput: document.getElementById('message-input'),
+    sendBtn: document.getElementById('send-btn'),
+    clearChatBtn: document.getElementById('clear-chat-btn'),
+    quickActions: document.getElementById('quick-actions'),
+    statusText: document.getElementById('status-text'),
+    analysisModal: document.getElementById('analysis-modal'),
+    modalBody: document.getElementById('modal-body'),
+    modalClose: document.getElementById('modal-close')
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    loadSampleTickets();
+    checkHealth();
     setupEventListeners();
+    autoResizeTextarea();
 });
 
 // Event Listeners
 function setupEventListeners() {
-    elements.analyzeBtn.addEventListener('click', analyzeTicket);
-    elements.resetBtn.addEventListener('click', resetForm);
+    elements.sendBtn.addEventListener('click', sendMessage);
+    elements.clearChatBtn.addEventListener('click', clearChat);
+    elements.modalClose.addEventListener('click', closeModal);
 
-    // Allow Enter key to submit
-    elements.ticketTitle.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') elements.ticketDescription.focus();
-    });
-    elements.ticketDescription.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.ctrlKey) analyzeTicket();
-    });
-}
-
-// Load Sample Tickets
-async function loadSampleTickets() {
-    try {
-        const response = await fetch(`${API_BASE}/sample-tickets`);
-        if (!response.ok) throw new Error('Failed to load sample tickets');
-
-        sampleTickets = await response.json();
-        renderSampleTickets();
-    } catch (error) {
-        console.error('Error loading sample tickets:', error);
-        elements.sampleTicketsContainer.innerHTML = `
-            <p class="sample-error">Could not load sample tickets. Make sure the backend is running now.</p>
-        `;
-    }
-}
-
-// Render Sample Tickets
-function renderSampleTickets() {
-    elements.sampleTicketsContainer.innerHTML = sampleTickets.map(ticket => `
-        <div class="sample-ticket" data-id="${ticket.id}">
-            <div class="sample-ticket-title">${escapeHtml(ticket.title)}</div>
-            <div class="sample-ticket-desc">${escapeHtml(truncate(ticket.description, 100))}</div>
-        </div>
-    `).join('');
-
-    // Add click handlers
-    document.querySelectorAll('.sample-ticket').forEach(el => {
-        el.addEventListener('click', () => {
-            const ticketId = el.dataset.id;
-            const ticket = sampleTickets.find(t => t.id === ticketId);
-            if (ticket) {
-                loadTicket(ticket);
-            }
+    // Quick action buttons
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const message = btn.dataset.message;
+            elements.messageInput.value = message;
+            sendMessage();
         });
     });
+
+    // Enter to send (Shift+Enter for new line)
+    elements.messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // Auto-resize textarea
+    elements.messageInput.addEventListener('input', autoResizeTextarea);
+
+    // Close modal on outside click
+    elements.analysisModal.addEventListener('click', (e) => {
+        if (e.target === elements.analysisModal) {
+            closeModal();
+        }
+    });
 }
 
-// Load a ticket into the form
-function loadTicket(ticket) {
-    elements.ticketTitle.value = ticket.title;
-    elements.ticketDescription.value = ticket.description;
-    hideResults();
+// Check API health
+async function checkHealth() {
+    try {
+        const response = await fetch(`${API_BASE}/health`);
+        if (response.ok) {
+            elements.statusText.textContent = 'Online';
+            elements.statusText.previousElementSibling.style.background = '#4ade80';
+        } else {
+            throw new Error('Health check failed');
+        }
+    } catch (error) {
+        elements.statusText.textContent = 'Offline';
+        elements.statusText.previousElementSibling.style.background = '#ef4444';
+        console.error('Health check failed:', error);
+    }
 }
 
-// Analyze Ticket
-async function analyzeTicket() {
-    const title = elements.ticketTitle.value.trim();
-    const description = elements.ticketDescription.value.trim();
+// Auto-resize textarea
+function autoResizeTextarea() {
+    elements.messageInput.style.height = 'auto';
+    elements.messageInput.style.height = Math.min(elements.messageInput.scrollHeight, 120) + 'px';
+}
 
-    // Validation
-    if (!title) {
-        showError('Please enter a ticket title');
-        elements.ticketTitle.focus();
-        return;
-    }
-    if (!description) {
-        showError('Please enter a ticket description');
-        elements.ticketDescription.focus();
-        return;
-    }
+// Send Message
+async function sendMessage() {
+    const message = elements.messageInput.value.trim();
 
-    // Show loading state
-    hideError();
-    showLoading(true);
-    elements.analyzeBtn.disabled = true;
+    if (!message || isProcessing) return;
+
+    // Add user message to chat
+    addMessage('user', message);
+
+    // Clear input
+    elements.messageInput.value = '';
+    autoResizeTextarea();
+
+    // Show typing indicator
+    isProcessing = true;
+    elements.sendBtn.disabled = true;
+    const typingIndicator = showTypingIndicator();
 
     try {
-        const response = await fetch(`${API_BASE}/analyze-ticket`, {
+        const response = await fetch(`${API_BASE}/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ title, description })
+            body: JSON.stringify({
+                message: message,
+                conversation_id: conversationId
+            })
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.detail || 'Analysis failed');
+            throw new Error(errorData.detail || 'Failed to send message');
         }
 
         const result = await response.json();
-        displayResults(result);
+
+        // Store conversation ID for continuity
+        conversationId = result.conversation_id;
+
+        // Remove typing indicator
+        typingIndicator.remove();
+
+        // Add assistant response
+        addMessage('assistant', result.message.content, result.analysis);
+
     } catch (error) {
-        showError(error.message);
-        console.error('Analysis error:', error);
+        typingIndicator.remove();
+        addMessage('assistant', `Error: ${error.message}. Please try again.`);
+        console.error('Chat error:', error);
     } finally {
-        showLoading(false);
-        elements.analyzeBtn.disabled = false;
+        isProcessing = false;
+        elements.sendBtn.disabled = false;
+        elements.messageInput.focus();
     }
 }
 
-// Display Results
-function displayResults(result) {
-    // Fill in result fields
-    elements.ticketId.textContent = result.ticket_id || '-';
-    elements.issueType.textContent = result.issue_type || '-';
-    elements.priority.textContent = result.priority || '-';
-    elements.impactedArea.textContent = result.impacted_area || '-';
-    elements.recommendedTeam.textContent = result.recommended_team || '-';
+// Add Message to Chat
+function addMessage(role, content, analysis = null) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role}-message`;
 
-    // Confidence
-    const confidence = result.confidence_score || 0;
-    elements.confidenceScore.textContent = `${(confidence * 100).toFixed(0)}%`;
-    elements.confidenceFill.style.width = `${confidence * 100}%`;
+    const avatarSvg = role === 'user'
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+             <circle cx="12" cy="7" r="4"/>
+           </svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <circle cx="12" cy="12" r="3"/>
+             <path d="M12 1v6m0 6v6m11-7h-6m-6 0H3"/>
+           </svg>`;
 
-    // Priority color
-    elements.priority.className = `card-value priority-${result.priority || ''}`;
+    // Format content with line breaks and parse markdown-like formatting
+    const formattedContent = formatMessageContent(content);
 
-    // Troubleshooting steps
-    if (result.troubleshooting_steps && result.troubleshooting_steps.length > 0) {
-        elements.troubleshootingSteps.innerHTML = result.troubleshooting_steps
-            .map(step => `<li>${escapeHtml(step)}</li>`)
-            .join('');
-    } else {
-        elements.troubleshootingSteps.innerHTML = '<li>No troubleshooting steps available</li>';
-    }
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${avatarSvg}</div>
+        <div class="message-content">
+            <div class="message-bubble">${formattedContent}</div>
+            <div class="message-time">${formatTime(new Date())}</div>
+        </div>
+    `;
 
-    // Reasoning
-    elements.reasoningSummary.textContent = result.reasoning_summary || '-';
+    elements.chatMessages.appendChild(messageDiv);
+    scrollToBottom();
 
-    // Show results
-    elements.resultsSection.classList.remove('hidden');
-}
-
-// Reset Form
-function resetForm() {
-    elements.ticketTitle.value = '';
-    elements.ticketDescription.value = '';
-    hideResults();
-    hideError();
-    elements.ticketTitle.focus();
-}
-
-// Hide Results
-function hideResults() {
-    elements.resultsSection.classList.add('hidden');
-}
-
-// Show Loading
-function showLoading(show) {
-    if (show) {
-        elements.loading.classList.add('active');
-        elements.resultCards.classList.add('hidden');
-    } else {
-        elements.loading.classList.remove('active');
-        elements.resultCards.classList.remove('hidden');
+    // Add analysis card if available
+    if (analysis) {
+        setTimeout(() => {
+            addAnalysisCard(analysis);
+        }, 100);
     }
 }
 
-// Show Error
-function showError(message) {
-    elements.errorMessage.textContent = message;
-    elements.errorMessage.classList.add('active');
+// Format message content
+function formatMessageContent(content) {
+    // Convert markdown-like formatting to HTML
+    return content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>')
+        .replace(/🔍/g, '<span>🔍</span>')
+        .replace(/🔴|🟠|🟡|🟢/g, '<span>$&</span>')
+        .replace(/🖥️|🌐|🗄️|📱|🔐|❓|📋/g, '<span>$&</span>')
+        .replace(/👥|📍|📊|💡/g, '<span>$&</span>');
 }
 
-// Hide Error
-function hideError() {
-    elements.errorMessage.classList.remove('active');
+// Add Analysis Card
+function addAnalysisCard(analysis) {
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'analysis-card';
+
+    const priorityClass = `priority-${analysis.priority}`;
+
+    cardDiv.innerHTML = `
+        <div class="analysis-row">
+            <span class="label">Issue Type</span>
+            <span class="value">${analysis.issue_type}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="label">Priority</span>
+            <span class="value ${priorityClass}">${analysis.priority.toUpperCase()}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="label">Team</span>
+            <span class="value">${analysis.recommended_team}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="label">Confidence</span>
+            <span class="value">${(analysis.confidence_score * 100).toFixed(0)}%</span>
+        </div>
+        <div style="margin-top: 12px; text-align: center;">
+            <button class="quick-btn" onclick="showAnalysisDetails(${JSON.stringify(analysis).replace(/"/g, '&quot;')})">
+                View Full Details
+            </button>
+        </div>
+    `;
+
+    elements.chatMessages.appendChild(cardDiv);
+    scrollToBottom();
 }
 
-// Utility Functions
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+// Show Analysis Details Modal
+window.showAnalysisDetails = function(analysis) {
+    const priorityClass = `priority-${analysis.priority}`;
+
+    elements.modalBody.innerHTML = `
+        <div style="display: grid; gap: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Issue Type</div>
+                    <div style="font-size: 1.1rem; font-weight: 600;">${analysis.issue_type}</div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Priority</div>
+                    <div style="font-size: 1.1rem; font-weight: 600;" class="${priorityClass}">${analysis.priority.toUpperCase()}</div>
+                </div>
+            </div>
+            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Impacted Area</div>
+                <div style="font-size: 1.1rem; font-weight: 600;">${analysis.impacted_area}</div>
+            </div>
+            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Recommended Team</div>
+                <div style="font-size: 1.1rem; font-weight: 600;">${analysis.recommended_team}</div>
+            </div>
+            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Confidence Score</div>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                    <div style="flex: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
+                        <div style="width: ${analysis.confidence_score * 100}%; height: 100%; background: var(--primary-color); border-radius: 4px;"></div>
+                    </div>
+                    <span style="font-weight: 600;">${(analysis.confidence_score * 100).toFixed(0)}%</span>
+                </div>
+            </div>
+            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Troubleshooting Steps</div>
+                <ol style="margin: 0; padding-left: 20px;">
+                    ${analysis.troubleshooting_steps.map(step => `<li style="margin: 6px 0; color: var(--text-primary);">${step}</li>`).join('')}
+                </ol>
+            </div>
+            <div style="padding: 12px; background: var(--primary-light); border-radius: 8px; border-left: 3px solid var(--primary-color);">
+                <div style="font-size: 0.75rem; color: var(--primary-color); text-transform: uppercase; margin-bottom: 4px;">Analysis Reasoning</div>
+                <div style="color: var(--text-primary);">${analysis.reasoning_summary}</div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 8px;">
+                Ticket ID: ${analysis.ticket_id}
+            </div>
+        </div>
+    `;
+
+    elements.analysisModal.classList.add('active');
+};
+
+function closeModal() {
+    elements.analysisModal.classList.remove('active');
 }
 
-function truncate(text, length) {
-    if (text.length <= length) return text;
-    return text.substring(0, length) + '...';
+// Show Typing Indicator
+function showTypingIndicator() {
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message assistant-message';
+    typingDiv.id = 'typing-indicator';
+
+    typingDiv.innerHTML = `
+        <div class="message-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H3"/>
+            </svg>
+        </div>
+        <div class="message-content">
+            <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+    `;
+
+    elements.chatMessages.appendChild(typingDiv);
+    scrollToBottom();
+
+    return typingDiv;
+}
+
+// Clear Chat
+async function clearChat() {
+    if (conversationId) {
+        try {
+            await fetch(`${API_BASE}/conversation/${conversationId}`, {
+                method: 'DELETE'
+            });
+        } catch (error) {
+            console.error('Failed to clear conversation:', error);
+        }
+    }
+
+    conversationId = null;
+    elements.chatMessages.innerHTML = `
+        <div class="message assistant-message">
+            <div class="message-avatar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H3"/>
+                </svg>
+            </div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    Chat cleared! How can I help you today?
+                </div>
+                <div class="message-time">${formatTime(new Date())}</div>
+            </div>
+        </div>
+    `;
+}
+
+// Scroll to Bottom
+function scrollToBottom() {
+    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+}
+
+// Format Time
+function formatTime(date) {
+    return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
