@@ -28,6 +28,7 @@ from backend.schemas import (
 from backend.services.analyzer import analyzer
 from backend.services.logger import logger
 from backend.services.sample_data import SAMPLE_TICKETS
+from backend.services.identity_skill import is_identity_question, get_identity_response
 
 
 # Chatbot-specific schemas
@@ -176,23 +177,29 @@ async def chat(request: ChatRequest):
     user_message = ChatMessage(role="user", content=request.message)
     conversations[conversation_id].append(user_message.model_dump())
 
-    # Analyze the message as a ticket
+    # --- Identity skill: handle greetings / who-are-you locally ---
+    if is_identity_question(request.message):
+        assistant_message = ChatMessage(role="assistant", content=get_identity_response())
+        conversations[conversation_id].append(assistant_message.model_dump())
+        return ChatResponse(
+            conversation_id=conversation_id,
+            message=assistant_message,
+            analysis=None
+        )
+
+    # --- Ticket analysis skill: only for real IT issues ---
     try:
         result = analyzer.analyze(
-            title=request.message[:100],  # Use first 100 chars as "title"
+            title=request.message[:100],
             description=request.message
         )
 
-        # Generate chatbot-style response
         analysis = TicketResponse(**result)
-
-        # Create natural language response
         response_text = generate_chatbot_response(analysis)
 
         assistant_message = ChatMessage(role="assistant", content=response_text)
         conversations[conversation_id].append(assistant_message.model_dump())
 
-        # Log the analysis
         logger.log_analysis(
             title=request.message[:50],
             description=request.message,
@@ -208,7 +215,7 @@ async def chat(request: ChatRequest):
     except Exception as e:
         error_message = ChatMessage(
             role="assistant",
-            content=f"I apologize, but I encountered an error analyzing your message: {str(e)}. Could you please rephrase or provide more details?"
+            content=f"I encountered an error analyzing your ticket: {str(e)}. Please try again."
         )
         conversations[conversation_id].append(error_message.model_dump())
 
@@ -283,17 +290,20 @@ def generate_chatbot_response(analysis: TicketResponse) -> str:
 
 if __name__ == "__main__":
     import uvicorn
+    from utils_network import get_local_ip
 
-    # Check for API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("\n" + "="*60)
-        print("WARNING: No OPENAI_API_KEY found in environment.")
-        print("Running in MOCK mode (keyword-based analysis).")
-        print("="*60 + "\n")
-    else:
-        print("\n" + "="*60)
-        print("API Key detected. Using LangChain with OpenAI.")
-        print("="*60 + "\n")
+
+    # Always use hardcoded OpenAI API key for realtime agent
+    print("\n" + "="*60)
+    print("Realtime agent mode: Using hardcoded OpenAI API key.")
+    print("="*60 + "\n")
+
+    local_url = "http://127.0.0.1:8000"
+    network_ip = get_local_ip()
+    network_url = f"http://{network_ip}:8000" if network_ip != "Unavailable" else "Unavailable"
+
+    print("Backend running at:")
+    print(f"  Local:   {local_url}")
+    print(f"  Network: {network_url}\n")
 
     uvicorn.run(app, host="127.0.0.1", port=8000)
