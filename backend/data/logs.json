@@ -756,5 +756,85 @@
       "timestamp": "2026-04-10T11:06:35.732594"
     },
     "timestamp": "2026-04-10T11:06:35.732594"
+  },
+  {
+    "ticket_id": "ticket-64c820f3",
+    "title": "Cannot access internal network",
+    "description": "Cannot access internal network",
+    "analysis_result": {
+      "ticket_id": "ticket-64c820f3",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T11:07:17.591630"
+    },
+    "timestamp": "2026-04-10T11:07:17.591630"
+  },
+  {
+    "ticket_id": "ticket-28d00e20",
+    "title": "Cannot access internal network",
+    "description": "Cannot access internal network",
+    "analysis_result": {
+      "ticket_id": "ticket-28d00e20",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T11:11:40.102413"
+    },
+    "timestamp": "2026-04-10T11:11:40.102413"
+  },
+  {
+    "ticket_id": "ticket-acf16e42",
+    "title": "Database connection timeout",
+    "description": "Database connection timeout",
+    "analysis_result": {
+      "ticket_id": "ticket-acf16e42",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T11:11:47.937664"
+    },
+    "timestamp": "2026-04-10T11:11:47.937664"
+  },
+  {
+    "ticket_id": "ticket-79d8f1c7",
+    "title": "Cannot access internal network",
+    "description": "Cannot access internal network",
+    "analysis_result": {
+      "ticket_id": "ticket-79d8f1c7",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T11:15:35.727828"
+    },
+    "timestamp": "2026-04-10T11:15:35.727828"
   }
 ]

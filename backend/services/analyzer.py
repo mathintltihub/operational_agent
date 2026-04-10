@@ -1,27 +1,24 @@
 """
-Ticket analyzer service using LangChain + OpenAI.
+Ticket analyzer service using LangChain + Gemini.
 """
 import json
 import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+GEMINI_API_KEY = "AIzaSyAtAPMD6EKxdSJEDtjOM9Svqay5Usochfs"
 
 
 class TicketAnalyzer:
-    """Analyzes IT support tickets using OpenAI via LangChain."""
+    """Analyzes IT support tickets using Gemini via LangChain."""
 
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model="gpt-4o",
+        self.llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash",
             temperature=0.1,
-            api_key=OPENAI_API_KEY
+            google_api_key=GEMINI_API_KEY
         )
         self.system_prompt = self._load_prompt()
 
@@ -45,13 +42,11 @@ class TicketAnalyzer:
     def _parse_json(self, content: str) -> dict:
         content = content.strip()
 
-        # Strip markdown code fences
         if "```json" in content:
             content = content.split("```json")[1].split("```")[0].strip()
         elif "```" in content:
             content = content.split("```")[1].strip()
 
-        # Extract JSON object
         match = re.search(r'\{[\s\S]*\}', content)
         if match:
             content = match.group(0)
@@ -70,7 +65,7 @@ class TicketAnalyzer:
                 "Contact IT team for assistance"
             ],
             "confidence_score": 0.1,
-            "reasoning_summary": f"OpenAI analysis failed: {error}",
+            "reasoning_summary": f"Gemini analysis failed: {error}",
             "timestamp": datetime.utcnow().isoformat()
         }
 
