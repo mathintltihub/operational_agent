@@ -376,5 +376,25 @@
       "timestamp": "2026-04-10T10:30:55.133274"
     },
     "timestamp": "2026-04-10T10:30:55.133274"
+  },
+  {
+    "ticket_id": "ticket-b429c520",
+    "title": "hello",
+    "description": "hello",
+    "analysis_result": {
+      "ticket_id": "ticket-b429c520",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T10:37:43.252142"
+    },
+    "timestamp": "2026-04-10T10:37:43.252142"
   }
 ]
