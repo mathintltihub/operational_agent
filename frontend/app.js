@@ -63,7 +63,7 @@ async function loadSampleTickets() {
     } catch (error) {
         console.error('Error loading sample tickets:', error);
         elements.sampleTicketsContainer.innerHTML = `
-            <p class="sample-error">Could not load sample tickets. Make sure the backend is running.</p>
+            <p class="sample-error">Could not load sample tickets. Make sure the backend is running now.</p>
         `;
     }
 }
