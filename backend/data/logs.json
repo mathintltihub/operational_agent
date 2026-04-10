@@ -716,5 +716,45 @@
       "timestamp": "2026-04-10T10:57:41.780706"
     },
     "timestamp": "2026-04-10T10:57:41.780706"
+  },
+  {
+    "ticket_id": "ticket-ea934ce4",
+    "title": "Need access to production server",
+    "description": "Need access to production server",
+    "analysis_result": {
+      "ticket_id": "ticket-ea934ce4",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T11:06:34.261578"
+    },
+    "timestamp": "2026-04-10T11:06:34.261578"
+  },
+  {
+    "ticket_id": "ticket-7f155e6e",
+    "title": "Application returning 500 error",
+    "description": "Application returning 500 error",
+    "analysis_result": {
+      "ticket_id": "ticket-7f155e6e",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Analysis failed",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Review ticket manually",
+        "Contact IT team for assistance"
+      ],
+      "confidence_score": 0.1,
+      "reasoning_summary": "Analysis failed due to error: '\\n  \"issue_type\"'. Ticket routed to Manual Review.",
+      "timestamp": "2026-04-10T11:06:35.732594"
+    },
+    "timestamp": "2026-04-10T11:06:35.732594"
   }
 ]
