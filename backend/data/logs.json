@@ -20,5 +20,115 @@
       "timestamp": "2026-04-10T06:16:01.229271"
     },
     "timestamp": "2026-04-10T06:16:01.229271"
+  },
+  {
+    "ticket_id": "ticket-b2db3ef3",
+    "title": "Unable to connect to database",
+    "description": "Application timeout when connecting to PostgreSQL",
+    "analysis_result": {
+      "ticket_id": "ticket-b2db3ef3",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database connectivity",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server availability and status",
+        "Verify network connectivity to database server",
+        "Review database connection pool settings",
+        "Check recent database logs for errors"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The ticket mentions keywords related to database issues, leading to this classification.",
+      "timestamp": "2026-04-10T09:49:50.632038"
+    },
+    "timestamp": "2026-04-10T09:49:50.632038"
+  },
+  {
+    "ticket_id": "ticket-a8008550",
+    "title": "unnable to connect the database",
+    "description": "At the time connecting the database they can show the error",
+    "analysis_result": {
+      "ticket_id": "ticket-a8008550",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database connectivity",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server availability and status",
+        "Verify network connectivity to database server",
+        "Review database connection pool settings",
+        "Check recent database logs for errors"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The ticket mentions keywords related to database issues, leading to this classification.",
+      "timestamp": "2026-04-10T09:51:14.009097"
+    },
+    "timestamp": "2026-04-10T09:51:14.009097"
+  },
+  {
+    "ticket_id": "ticket-f8821279",
+    "title": "unnable to connect the database",
+    "description": "At the time connecting the database they can show the error",
+    "analysis_result": {
+      "ticket_id": "ticket-f8821279",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database connectivity",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server availability and status",
+        "Verify network connectivity to database server",
+        "Review database connection pool settings",
+        "Check recent database logs for errors"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The ticket mentions keywords related to database issues, leading to this classification.",
+      "timestamp": "2026-04-10T09:51:15.457009"
+    },
+    "timestamp": "2026-04-10T09:51:15.457009"
+  },
+  {
+    "ticket_id": "ticket-24fa2260",
+    "title": "unnable to connect the database",
+    "description": "At the time connecting the database they can show the error",
+    "analysis_result": {
+      "ticket_id": "ticket-24fa2260",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database connectivity",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server availability and status",
+        "Verify network connectivity to database server",
+        "Review database connection pool settings",
+        "Check recent database logs for errors"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The ticket mentions keywords related to database issues, leading to this classification.",
+      "timestamp": "2026-04-10T09:51:30.858266"
+    },
+    "timestamp": "2026-04-10T09:51:30.858266"
+  },
+  {
+    "ticket_id": "ticket-843d8e04",
+    "title": "Application crash on startup",
+    "description": "The mobile app crashes immediately after opening. Version 2.5.0 was released yesterday. We've received 200+ crash reports. iOS and Android both affected.",
+    "analysis_result": {
+      "ticket_id": "ticket-843d8e04",
+      "issue_type": "application",
+      "priority": "high",
+      "impacted_area": "Application service",
+      "recommended_team": "Application Support",
+      "troubleshooting_steps": [
+        "Check application logs for errors",
+        "Verify deployment status",
+        "Review recent code changes",
+        "Test application endpoints"
+      ],
+      "confidence_score": 0.75,
+      "reasoning_summary": "The ticket mentions keywords related to application issues, leading to this classification.",
+      "timestamp": "2026-04-10T09:51:35.959700"
+    },
+    "timestamp": "2026-04-10T09:51:35.959700"
   }
 ]
