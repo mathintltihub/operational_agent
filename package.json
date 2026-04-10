@@ -1,0 +1,14 @@
+{
+  "name": "operational_agent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"python3 backend/main.py\" \"live-server frontend --port=5173\"",
+    "frontend": "live-server frontend --port=5173",
+    "backend": "python3 backend/main.py"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "live-server": "^1.2.2"
+  }
+}
