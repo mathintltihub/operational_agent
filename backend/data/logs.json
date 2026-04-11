@@ -1014,5 +1014,94 @@
       "timestamp": "2026-04-11T04:04:15.813088"
     },
     "timestamp": "2026-04-11T04:04:15.813088"
+  },
+  {
+    "ticket_id": "ticket-b1b3d18e",
+    "title": "Database connection timeout",
+    "description": "Database connection timeout",
+    "analysis_result": {
+      "ticket_id": "ticket-b1b3d18e",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database connectivity and performance",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server status and availability",
+        "Verify network connectivity to database host",
+        "Review database connection pool settings",
+        "Check database logs for errors or warnings",
+        "Verify database credentials and permissions"
+      ],
+      "confidence_score": 0.8,
+      "reasoning_summary": "Classified as database issue with medium priority based on keyword analysis. Confidence: 80%.",
+      "timestamp": "2026-04-11T05:48:16.945198"
+    },
+    "timestamp": "2026-04-11T05:48:16.945198"
+  },
+  {
+    "ticket_id": "ticket-0efb510d",
+    "title": "Production server down, all users affected, critic",
+    "description": "Production server down, all users affected, critical outage!",
+    "analysis_result": {
+      "ticket_id": "ticket-0efb510d",
+      "issue_type": "server",
+      "priority": "critical",
+      "impacted_area": "Server infrastructure and resources",
+      "recommended_team": "Server Team",
+      "troubleshooting_steps": [
+        "Check server availability and ping response",
+        "Review CPU, memory, and disk usage metrics",
+        "Check system logs for errors",
+        "Verify SSH/RDP access",
+        "Review recent system changes or updates"
+      ],
+      "confidence_score": 0.75,
+      "reasoning_summary": "Classified as server issue with critical priority based on keyword analysis. Confidence: 75%.",
+      "timestamp": "2026-04-11T05:48:33.119107"
+    },
+    "timestamp": "2026-04-11T05:48:33.119107"
+  },
+  {
+    "ticket_id": "ticket-45f57d9b",
+    "title": "Our production PostgreSQL database has been timing",
+    "description": "Our production PostgreSQL database has been timing out intermittently for the past 2 hours. About 50 users are affected and cannot complete transactions. Error logs show connection pool exhaustion. No recent config changes were made.",
+    "analysis_result": {
+      "ticket_id": "ticket-45f57d9b",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database connectivity and performance",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server status and availability",
+        "Verify network connectivity to database host",
+        "Review database connection pool settings",
+        "Check database logs for errors or warnings",
+        "Verify database credentials and permissions"
+      ],
+      "confidence_score": 0.8,
+      "reasoning_summary": "Classified as database issue with medium priority based on keyword analysis. Confidence: 80%.",
+      "timestamp": "2026-04-11T05:49:59.101881"
+    },
+    "timestamp": "2026-04-11T05:49:59.101881"
+  },
+  {
+    "ticket_id": "ticket-ad42d74a",
+    "title": "Our production PostgreSQL database has been timing",
+    "description": "Our production PostgreSQL database has been timing out intermittently for the past 2 hours. About 50 users are affected and cannot complete transactions. Error logs show connection pool exhaustion. No recent config changes were made.",
+    "analysis_result": {
+      "ticket_id": "ticket-ad42d74a",
+      "issue_type": "database",
+      "priority": "high",
+      "impacted_area": "Production PostgreSQL Database",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Increase the connection pool size",
+        "Monitor database performance and adjust as needed"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "Connection pool exhaustion is likely the cause of the timeouts. The error logs indicate that the database is unable to handle the current load.",
+      "timestamp": "2026-04-11T05:56:31.631343"
+    },
+    "timestamp": "2026-04-11T05:56:31.631343"
   }
 ]

@@ -130,7 +130,7 @@ async function sendMessage() {
         typingIndicator.remove();
 
         // Add assistant response
-        addMessage('assistant', result.message.content, result.analysis);
+        addMessage('assistant', result.message.content, result.structured || result.analysis);
 
     } catch (error) {
         typingIndicator.remove();
@@ -199,24 +199,31 @@ function addAnalysisCard(analysis) {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'analysis-card';
 
-    const priorityClass = `priority-${analysis.priority}`;
+    // Support both structured (from LLM) and legacy (from skills) formats
+    const issueType = analysis.issue_type || analysis.issue_type;
+    const priority = analysis.priority || analysis.priority;
+    const team = analysis.assigned_team || analysis.recommended_team;
+    const confidenceVal = analysis.confidence_score ? (analysis.confidence_score * 100).toFixed(0) :
+                         (analysis.confidence === 'high' ? '85' : analysis.confidence === 'medium' ? '60' : '40');
+
+    const priorityClass = `priority-${priority}`;
 
     cardDiv.innerHTML = `
         <div class="analysis-row">
             <span class="label">Issue Type</span>
-            <span class="value">${analysis.issue_type}</span>
+            <span class="value">${issueType}</span>
         </div>
         <div class="analysis-row">
             <span class="label">Priority</span>
-            <span class="value ${priorityClass}">${analysis.priority.toUpperCase()}</span>
+            <span class="value ${priorityClass}">${priority.toUpperCase()}</span>
         </div>
         <div class="analysis-row">
             <span class="label">Team</span>
-            <span class="value">${analysis.recommended_team}</span>
+            <span class="value">${team}</span>
         </div>
         <div class="analysis-row">
             <span class="label">Confidence</span>
-            <span class="value">${(analysis.confidence_score * 100).toFixed(0)}%</span>
+            <span class="value">${confidenceVal}%</span>
         </div>
         <div style="margin-top: 12px; text-align: center;">
             <button class="quick-btn" onclick="showAnalysisDetails(${JSON.stringify(analysis).replace(/"/g, '&quot;')})">

@@ -476,16 +476,23 @@ if __name__ == "__main__":
     from utils_network import get_local_ip
 
 
-    # Always use hardcoded OpenAI API key for realtime agent
+    # Ollama mode
     print("\n" + "="*60)
-    print("Realtime agent mode: Using hardcoded OpenAI API key.")
+    print("Operations Agent v2.0 - Running with Ollama (LLaMA 3)")
     print("="*60 + "\n")
+
+    # Check Ollama status
+    if check_ollama_health():
+        print("✓ Ollama connected - LLaMA 3 model available")
+    else:
+        print("⚠ Ollama not detected - using skill-based fallback")
+        print("  Make sure Ollama is running: ollama serve")
 
     local_url = "http://127.0.0.1:8000"
     network_ip = get_local_ip()
     network_url = f"http://{network_ip}:8000" if network_ip != "Unavailable" else "Unavailable"
 
-    print("Backend running at:")
+    print("\nBackend running at:")
     print(f"  Local:   {local_url}")
     print(f"  Network: {network_url}\n")
 
