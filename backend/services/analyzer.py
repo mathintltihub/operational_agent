@@ -6,20 +6,30 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from langchain_google_genai import ChatGoogleGenerativeAI
 
-GEMINI_API_KEY = "AIzaSyAtAPMD6EKxdSJEDtjOM9Svqay5Usochfs"
+from backend.services.ollama_client import query_ollama
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    GEMINI_API_KEY = "AIzaSyAtAPMD6EKxdSJEDtjOM9Svqay5Usochfs"
+except ImportError:
+    ChatGoogleGenerativeAI = None
+    GEMINI_API_KEY = None
+
 
 
 class TicketAnalyzer:
-    """Analyzes IT support tickets using Gemini via LangChain."""
+    """Analyzes IT support tickets using Gemini via LangChain or local Ollama."""
 
-    def __init__(self):
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
-            temperature=0.1,
-            google_api_key=GEMINI_API_KEY
-        )
+    def __init__(self, use_ollama: bool = False):
+        self.use_ollama = use_ollama
+        if not use_ollama and ChatGoogleGenerativeAI:
+            self.llm = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash",
+                temperature=0.1,
+                google_api_key=GEMINI_API_KEY
+            )
+        else:
+            self.llm = None
         self.system_prompt = self._load_prompt()
 
     def _load_prompt(self) -> str:
@@ -29,15 +39,26 @@ class TicketAnalyzer:
     def analyze(self, title: str, description: str) -> dict:
         prompt = self.system_prompt.replace("{title}", title).replace("{description}", description)
 
-        try:
-            response = self.llm.invoke(prompt)
-            result = self._parse_json(response.content)
-            result["ticket_id"] = f"ticket-{uuid.uuid4().hex[:8]}"
-            result["timestamp"] = datetime.utcnow().isoformat()
-            return result
-        except Exception as e:
-            print(f"[TicketAnalyzer ERROR] {e}")
-            return self._fallback(title, description, str(e))
+        if self.use_ollama:
+            try:
+                response = query_ollama(prompt)
+                result = self._parse_json(response)
+                result["ticket_id"] = f"ticket-{uuid.uuid4().hex[:8]}"
+                result["timestamp"] = datetime.utcnow().isoformat()
+                return result
+            except Exception as e:
+                print(f"[OllamaAnalyzer ERROR] {e}")
+                return self._fallback(title, description, str(e))
+        else:
+            try:
+                response = self.llm.invoke(prompt)
+                result = self._parse_json(response.content)
+                result["ticket_id"] = f"ticket-{uuid.uuid4().hex[:8]}"
+                result["timestamp"] = datetime.utcnow().isoformat()
+                return result
+            except Exception as e:
+                print(f"[TicketAnalyzer ERROR] {e}")
+                return self._fallback(title, description, str(e))
 
     def _parse_json(self, content: str) -> dict:
         content = content.strip()
@@ -71,4 +92,5 @@ class TicketAnalyzer:
 
 
 # Singleton instance
-analyzer = TicketAnalyzer()
+# To use Ollama, set use_ollama=True
+analyzer = TicketAnalyzer(use_ollama=True)

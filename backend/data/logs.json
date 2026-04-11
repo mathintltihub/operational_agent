@@ -836,5 +836,83 @@
       "timestamp": "2026-04-10T11:15:35.727828"
     },
     "timestamp": "2026-04-10T11:15:35.727828"
+  },
+  {
+    "ticket_id": "ticket-008fd742",
+    "title": "Application returning 500 error",
+    "description": "Application returning 500 error",
+    "analysis_result": {
+      "ticket_id": "ticket-008fd742",
+      "issue_type": "application",
+      "priority": "high",
+      "impacted_area": "Application Error Handling",
+      "recommended_team": "Application Support",
+      "troubleshooting_steps": [
+        "Check application and server logs for error messages or stack traces",
+        "Validate recent code deployments or updates that might have caused the issue",
+        "Review environment variables and configuration settings specific to the application"
+      ],
+      "confidence_score": 0.95,
+      "reasoning_summary": "The ticket clearly indicates an HTTP 500 error within a web application; this is direct evidence of an internal server error.",
+      "timestamp": "2026-04-11T03:48:40.685077"
+    },
+    "timestamp": "2026-04-11T03:48:40.685077"
+  },
+  {
+    "ticket_id": "ticket-c43b6c5e",
+    "title": "Need access to production server",
+    "description": "Need access to production server",
+    "analysis_result": {
+      "ticket_id": "ticket-c43b6c5e",
+      "issue_type": "access/request",
+      "priority": "low",
+      "impacted_area": "Server access - Unspecified details provided, no urgency or impact information given.",
+      "recommended_team": "Service Desk",
+      "troubleshooting_steps": [
+        "Request more specific information from user to understand the purpose and need for server access."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The ticket is an unspecified request for production server access without details on urgency or impact, which indicates a low-priority informational request to be handled by Service Desk after additional information gathering.",
+      "timestamp": "2026-04-11T03:49:47.630904"
+    },
+    "timestamp": "2026-04-11T03:49:47.630904"
+  },
+  {
+    "ticket_id": "ticket-c4d1dd2d",
+    "title": "there is the server issue in my sytem.",
+    "description": "there is the server issue in my sytem.",
+    "analysis_result": {
+      "ticket_id": "ticket-c4d1dd2d",
+      "issue_type": "unknown",
+      "priority": "low",
+      "impacted_area": "Server system, unclear issues",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Ask the user to provide specific details about their server issue"
+      ],
+      "confidence_score": 0.3,
+      "reasoning_summary": "The ticket lacks essential information regarding the nature of the 'server issue' making it difficult to classify accurately.",
+      "timestamp": "2026-04-11T03:50:05.317038"
+    },
+    "timestamp": "2026-04-11T03:50:05.317038"
+  },
+  {
+    "ticket_id": "ticket-47dce64b",
+    "title": "check my server to analysis any problem in that.",
+    "description": "check my server to analysis any problem in that.",
+    "analysis_result": {
+      "ticket_id": "ticket-47dce64b",
+      "issue_type": "unknown",
+      "priority": "low",
+      "impacted_area": "Server status inquiry without details",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request detailed description of observed issues from the user"
+      ],
+      "confidence_score": 0.2,
+      "reasoning_summary": "The ticket's title and content are too vague to classify confidently without additional information.",
+      "timestamp": "2026-04-11T03:52:13.450484"
+    },
+    "timestamp": "2026-04-11T03:52:13.450484"
   }
 ]
