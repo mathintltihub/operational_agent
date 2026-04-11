@@ -914,5 +914,105 @@
       "timestamp": "2026-04-11T03:52:13.450484"
     },
     "timestamp": "2026-04-11T03:52:13.450484"
+  },
+  {
+    "ticket_id": "ticket-ed08ec63",
+    "title": "Cannot access internal network",
+    "description": "Cannot access internal network",
+    "analysis_result": {
+      "ticket_id": "ticket-ed08ec63",
+      "issue_type": "unknown",
+      "priority": "low",
+      "impacted_area": "Network connectivity within the company's local area network (LAN)",
+      "recommended_team": "Service Desk",
+      "troubleshooting_steps": [
+        "Ask for more detailed description of access issues",
+        "Verify if other devices can reach internal resources and not just the internet"
+      ],
+      "confidence_score": 0.4,
+      "reasoning_summary": "The ticket is vague about whether it's an issue with accessing the LAN or the wider network without more specific details.",
+      "timestamp": "2026-04-11T04:01:01.657097"
+    },
+    "timestamp": "2026-04-11T04:01:01.657097"
+  },
+  {
+    "ticket_id": "ticket-4ae74202",
+    "title": "Database connection timeout",
+    "description": "Database connection timeout",
+    "analysis_result": {
+      "ticket_id": "ticket-4ae74202",
+      "issue_type": "database",
+      "priority": "high",
+      "impacted_area": "Database connectivity",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server availability and status",
+        "Verify network connectivity to database server",
+        "Review recent changes in the connection string or credentials"
+      ],
+      "confidence_score": 0.95,
+      "reasoning_summary": "The ticket clearly describes a common issue with direct impact on service delivery and is categorized as high priority.",
+      "timestamp": "2026-04-11T04:01:55.835818"
+    },
+    "timestamp": "2026-04-11T04:01:55.835818"
+  },
+  {
+    "ticket_id": "ticket-e2e0cf26",
+    "title": "what is the problem in server",
+    "description": "what is the problem in server",
+    "analysis_result": {
+      "ticket_id": "ticket-e2e0cf26",
+      "issue_type": "unknown",
+      "priority": "low",
+      "impacted_area": "Unclear - Server related but no specifics provided",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request user to provide more details about the server issue they are experiencing"
+      ],
+      "confidence_score": 0.2,
+      "reasoning_summary": "The ticket lacks specifics about a server problem and does not follow standard naming conventions or terminology.",
+      "timestamp": "2026-04-11T04:02:18.732232"
+    },
+    "timestamp": "2026-04-11T04:02:18.732232"
+  },
+  {
+    "ticket_id": "ticket-be6f9c15",
+    "title": "Need access to production server",
+    "description": "Need access to production server",
+    "analysis_result": {
+      "ticket_id": "ticket-be6f9c15",
+      "issue_type": "access/request",
+      "priority": "low",
+      "impacted_area": "Server Access",
+      "recommended_team": "Service Desk",
+      "troubleshooting_steps": [
+        "Verify user identity and employee credentials",
+        "Confirm manager approval documentation",
+        "Process access request through proper channels"
+      ],
+      "confidence_score": 0.9,
+      "reasoning_summary": "The ticket is a clear-cut case of an access/request but lacks details on the reason for accessing and how urgent it is.",
+      "timestamp": "2026-04-11T04:04:01.218150"
+    },
+    "timestamp": "2026-04-11T04:04:01.218150"
+  },
+  {
+    "ticket_id": "ticket-8f146235",
+    "title": "what is the time now",
+    "description": "what is the time now",
+    "analysis_result": {
+      "ticket_id": "ticket-8f146235",
+      "issue_type": "unknown",
+      "priority": "low",
+      "impacted_area": "Unclear request",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Ask for clarification on the user's intent or need related to time information"
+      ],
+      "confidence_score": 0.4,
+      "reasoning_summary": "The ticket is vague and does not align with common IT support request patterns.",
+      "timestamp": "2026-04-11T04:04:15.813088"
+    },
+    "timestamp": "2026-04-11T04:04:15.813088"
   }
 ]
