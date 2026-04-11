@@ -111,8 +111,8 @@ What's the issue you're facing today?""",
 **Built to do one thing exceptionally well:**
 Analyze IT support tickets and get them to the right team, fast.
 
-**Who made me:**
-I'm powered by Google Gemini AI, integrated via LangChain, running on a FastAPI backend.
+**Who powers me:**
+I'm powered by **Ollama with LLaMA 3** — running entirely on your local machine. No external APIs, no cloud dependencies.
 
 **What I'm not:**
 I'm not a general-purpose chatbot. I'm purpose-built for IT Operations triage — that's my only job and I do it well.
@@ -181,8 +181,8 @@ Check the analysis card for full details. Click **View Full Details** for the co
 
 **System Status:**
 - 🟢 API Backend — Running
-- 🟢 Gemini AI Engine — Connected
-- 🟢 Ticket Analyzer — Ready
+- 🟢 Ollama (LLaMA 3) — Connected
+- 🟢 Skill Engine — Ready
 - 🟢 Logging Service — Active
 
 I'm ready to analyze your IT tickets. Go ahead and describe your issue!""",
