@@ -28,7 +28,7 @@ from backend.schemas import (
 from backend.services.analyzer import analyzer
 from backend.services.logger import logger
 from backend.services.sample_data import SAMPLE_TICKETS
-from backend.services.identity_skill import is_identity_question, get_identity_response
+from backend.services.identity_skill import is_identity_question, get_skill_response
 
 
 # Chatbot-specific schemas
@@ -179,7 +179,7 @@ async def chat(request: ChatRequest):
 
     # --- Identity skill: handle greetings / who-are-you locally ---
     if is_identity_question(request.message):
-        assistant_message = ChatMessage(role="assistant", content=get_identity_response())
+        assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
         conversations[conversation_id].append(assistant_message.model_dump())
         return ChatResponse(
             conversation_id=conversation_id,
