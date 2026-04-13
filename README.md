@@ -1,189 +1,227 @@
 # Operations Agent
 
-IT Operations Ticket Triage System - Local MVP
+Local-first IT operations triage assistant with a FastAPI backend, chat-style frontend, JSON logging, and optional Ollama-powered analysis.
 
 ## Overview
 
-Operations Agent is a local-first MVP for an AI-based IT Operations platform. It automates ticket triage, issue classification, priority detection, team assignment, and troubleshooting suggestions for IT support teams.
+Operations Agent helps triage IT support issues by turning a free-form problem description into:
+
+- an issue category
+- a priority level
+- a recommended team
+- an impacted area summary
+- troubleshooting steps
+- a confidence score
+
+The app is designed to work locally. When Ollama is running, it can enrich the classification with a local LLM. When Ollama is unavailable, the backend falls back to deterministic skill and keyword-based logic.
+
+## Current Stack
+
+- Backend: FastAPI
+- Frontend: static HTML, CSS, and vanilla JavaScript
+- LLM option: Ollama at `http://localhost:11434`
+- Default Ollama model: `llama3.2:3b`
+- Logging: local JSON file at `backend/data/logs.json`
 
 ## Features
 
-- **Ticket Analysis**: Analyzes support tickets using AI (LangChain + OpenAI)
-- **Issue Classification**: Categorizes tickets into server, network, database, application, or access/request
-- **Priority Detection**: Identifies critical, high, medium, or low priority
-- **Team Routing**: Recommends the appropriate team for ticket assignment
-- **Troubleshooting Steps**: Suggests practical, safe troubleshooting steps
-- **Local Logging**: Saves all request/response pairs locally in JSON format
-- **Mock Mode**: Works without API key using keyword-based analysis
+- Conversational ticket intake through a chat UI
+- Structured ticket analysis via REST API
+- Local-first deployment with no cloud dependency required
+- Ollama health detection and graceful fallback behavior
+- Sample tickets for demos and testing
+- Conversation memory for recent chat history
+- Local analysis log retrieval and cleanup endpoints
+- Identity/help responses handled without calling the LLM
 
-## Architecture
+## Project Structure
 
-```
-operations_agent/
-├── frontend/
-│   ├── index.html     # Main UI
-│   ├── style.css     # Styles
-│   └── app.js        # Frontend logic
+```text
+operational_agent/
 ├── backend/
-│   ├── main.py       # FastAPI application
-│   ├── schemas.py   # Pydantic models
+│   ├── data/
+│   │   └── logs.json
 │   ├── services/
-│   │   ├── analyzer.py    # LangChain ticket analyzer
-│   │   ├── logger.py     # JSON logging service
-│   │   └── sample_data.py # Sample tickets
-│   ├── prompts/
-│   │   └── operations_agent_prompt.txt # System prompt
-│   └── data/
-│       └── logs.json # Analysis logs
+│   │   ├── analyzer.py
+│   │   ├── identity_skill.py
+│   │   ├── logger.py
+│   │   ├── ollama_client.py
+│   │   └── sample_data.py
+│   ├── main.py
+│   ├── schemas.py
+│   └── utils_network.py
+├── frontend/
+│   ├── app.js
+│   ├── index.html
+│   └── style.css
 ├── tests/
+│   └── test_api.py
+├── package.json
 ├── requirements.txt
-├── .env.example
 └── README.md
 ```
 
-## Prerequisites
+## Requirements
 
-- Python 3.9+
-- For AI analysis: OpenAI API key (optional - mock mode available)
+- Python 3.10+
+- Node.js and npm if you want to use the frontend dev scripts
+- Ollama only if you want local LLM-backed analysis
 
-## Setup
+## Quick Start
 
-### 1. Create Virtual Environment
+### 1. Install Python dependencies
 
 ```bash
-# Create virtual environment
-python -m venv venv
-
-# Activate (Windows)
-venv\Scripts\activate
-
-# Activate (macOS/Linux)
+python3 -m venv venv
 source venv/bin/activate
-```
-
-### 2. Install Dependencies
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment (Optional)
+### 2. Start the backend
+
+From the repository root:
 
 ```bash
-# Copy example env file
-copy .env.example .env
-
-# Edit .env and add your OpenAI API key
-# OPENAI_API_KEY=sk-your-api-key-here
+python3 backend/main.py
 ```
 
-**Note**: Without an API key, the app runs in mock mode with keyword-based analysis.
+Backend URLs:
 
-### 4. Start the Backend
+- Local: `http://127.0.0.1:8000`
+- Docs: `http://127.0.0.1:8000/docs`
+
+### 3. Start the frontend
+
+If Node dependencies are already installed:
 
 ```bash
-cd backend
-python main.py
+npm run frontend
 ```
 
-The API will be available at `http://127.0.0.1:8000`
+This serves the frontend at:
 
-### 5. Start the Frontend
+- `http://127.0.0.1:5173`
 
-Open `frontend/index.html` in your browser, or use a simple HTTP server:
+You can also run backend and frontend together:
 
 ```bash
-# Python 3
-python -m http.server 8080 --directory frontend
+npm run dev
 ```
 
-Then visit `http://localhost:8080`
+## Ollama Setup
+
+Ollama is optional but recommended if you want the app to augment the local rule-based analysis with an LLM.
+
+### 1. Start Ollama
+
+```bash
+ollama serve
+```
+
+### 2. Pull the configured model
+
+```bash
+ollama pull llama3.2:3b
+```
+
+### 3. Verify status
+
+Once the backend is running, check:
+
+```bash
+curl http://127.0.0.1:8000/ollama-status
+```
+
+If Ollama is unavailable, the app still runs and returns fallback analysis.
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/analyze-ticket` | POST | Analyze a ticket |
-| `/sample-tickets` | GET | Get sample tickets |
-| `/logs` | GET | Get analysis logs |
-| `/logs/{ticket_id}` | GET | Get specific log |
-| `/logs` | DELETE | Clear logs |
+### System
 
-## Usage
+- `GET /health` - API health status
+- `GET /ollama-status` - whether Ollama is reachable and which model is configured
 
-1. Open the frontend in your browser
-2. Enter a ticket title and description
-3. Click "Analyze Ticket"
-4. View the classification results
+### Ticket Analysis
 
-Or click on a sample ticket to auto-fill the form.
+- `POST /analyze-ticket` - analyze a structured ticket with `title` and `description`
+- `GET /sample-tickets` - fetch built-in sample tickets
 
-## Sample Tickets
+### Chat
 
-| ID | Title | Expected Issue | Expected Priority |
-|----|-------|----------------|-------------------|
-| 001 | Unable to connect to database from application | database | high |
-| 002 | VPN users cannot access internal portal | network | high |
-| 003 | Production application returns HTTP 500 | application | critical |
-| 004 | Need access to production server | access/request | medium |
-| 005 | Linux server CPU usage is 98 percent | server | high |
-| 006 | Email password reset request | access/request | low |
-| 007 | Network latency to US-East region | network | medium |
-| 008 | Database replication lag | database | medium |
-| 009 | Application crash on startup | application | high |
-| 010 | Request for admin access to analytics platform | access/request | low |
-| 011 | Web server unreachable | server | critical |
-| 012 | Strange login attempts detected | network | high |
+- `POST /chat` - conversational analysis endpoint
+- `GET /conversation/{conversation_id}` - retrieve recent conversation history
+- `DELETE /conversation/{conversation_id}` - delete a conversation from in-memory storage
 
-## Running Tests
+### Logs
+
+- `GET /logs` - fetch recent analysis logs
+- `GET /logs/{ticket_id}` - fetch a specific log entry
+- `DELETE /logs` - clear all stored logs
+
+## Example Requests
+
+### Analyze a ticket
 
 ```bash
-# Basic API validation
-python -c "
-import requests
-import json
-
-BASE = 'http://127.0.0.1:8000'
-
-# Test health
-r = requests.get(f'{BASE}/health')
-print('Health:', r.json())
-
-# Test sample tickets
-r = requests.get(f'{BASE}/sample-tickets')
-print('Sample tickets:', len(r.json()))
-
-# Test analyze ticket
-r = requests.post(f'{BASE}/analyze-ticket', json={
-    'title': 'Cannot connect to database',
-    'description': 'Application timeout when connecting to DB'
-})
-print('Analysis result:', json.dumps(r.json(), indent=2))
-"
+curl -X POST http://127.0.0.1:8000/analyze-ticket \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Production database timeout",
+    "description": "Users cannot log in and the app is timing out when connecting to PostgreSQL."
+  }'
 ```
 
-## Configuration
+### Chat with the assistant
 
-### Mock Mode
-If no `OPENAI_API_KEY` is set, the app uses keyword-based analysis:
-- Good for demos and testing
-- Uses keyword matching to determine issue type
-- Always returns a result
+```bash
+curl -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "VPN users cannot access the internal portal and around 50 employees are affected."
+  }'
+```
 
-### Live Mode
-With a valid OpenAI API key:
-- Uses GPT-4 with LangChain
-- More accurate classification
-- Better reasoning and troubleshooting steps
+## Frontend Behavior
+
+The frontend is a chat interface that:
+
+- checks backend health on load
+- sends messages to `POST /chat`
+- keeps a `conversation_id` client-side for continuity
+- renders a compact analysis card for structured results
+- opens a detailed modal for the full analysis payload
+
+## Running the Basic API Test Script
+
+Start the backend first, then run:
+
+```bash
+python3 tests/test_api.py
+```
+
+The script checks:
+
+- health
+- sample tickets
+- ticket analysis
+- logs
+
+## Data and Persistence
+
+- Analysis logs are stored in `backend/data/logs.json`
+- Chat conversations are stored in memory only
+- restarting the backend clears conversation history
+
+## Known Caveats
+
+- `.env.example` still contains older OpenAI-era setup text and does not reflect the current Ollama-based flow.
+- `requirements.txt` includes some libraries that are not central to the current local-first path.
+- `backend/main.py` references a `backend.services.agent_skills` module; make sure that module exists in your working tree if you are running the current backend entrypoint.
 
 ## Next Improvements
 
-- Add more LLM provider options (Anthropic, local models)
-- Implement ticket history and trending
-- Add team workload balancing
-- Add custom routing rules
-- Add notification integrations (Slack, email)
-- Add dashboard with analytics
-- Implement ticket status tracking
-- Add user authentication
+- Align `.env.example` with the current Ollama workflow
+- Trim unused dependencies from `requirements.txt`
+- Persist conversations beyond process memory
+- Add automated tests for the `/chat` and conversation endpoints
+- Expose configurable model selection instead of hardcoding `llama3.2:3b`
