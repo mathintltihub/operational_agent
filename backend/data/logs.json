@@ -1329,5 +1329,45 @@
       "timestamp": "2026-04-13T13:00:55.146025"
     },
     "timestamp": "2026-04-13T13:00:55.146025"
+  },
+  {
+    "ticket_id": "ticket-1d24bfa3",
+    "title": "there is the issue at the time server reload",
+    "description": "there is the issue at the time server reload",
+    "analysis_result": {
+      "ticket_id": "ticket-1d24bfa3",
+      "issue_type": "server",
+      "priority": "critical",
+      "impacted_area": "Web Services and Database Access",
+      "recommended_team": "Server Operations Team",
+      "troubleshooting_steps": [
+        "Verify the necessity of a full system reboot",
+        "Attempt to perform an incremental update if possible"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "The server reload is causing downtime for web services, affecting database accessibility.",
+      "timestamp": "2026-04-13T13:10:02.382660"
+    },
+    "timestamp": "2026-04-13T13:10:02.382660"
+  },
+  {
+    "ticket_id": "ticket-d60f7df4",
+    "title": "Need access to production server",
+    "description": "Need access to production server",
+    "analysis_result": {
+      "ticket_id": "ticket-d60f7df4",
+      "issue_type": "access/request",
+      "priority": "high",
+      "impacted_area": "Production Environment",
+      "recommended_team": "Security and Access Control Team",
+      "troubleshooting_steps": [
+        "Verify user identity credentials",
+        "Log in through secure terminal with proper permissions"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "User requires elevated privileges for server access. Standard protocols must be followed to ensure security.",
+      "timestamp": "2026-04-13T13:13:03.545811"
+    },
+    "timestamp": "2026-04-13T13:13:03.545811"
   }
 ]

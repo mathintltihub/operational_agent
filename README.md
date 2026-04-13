@@ -8,7 +8,7 @@ It is designed for support-style workflows such as incident intake, priority est
 
 - accepts free-form IT issue descriptions through API or chat UI
 - classifies the issue type
-- estimates priority
+- estimates priorities
 - recommends the owning team
 - summarizes impacted area
 - suggests next troubleshooting steps

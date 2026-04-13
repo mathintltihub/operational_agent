@@ -619,44 +619,41 @@ async def delete_conversation(conversation_id: str):
 
 
 def generate_chatbot_response(analysis: TicketResponse) -> str:
-    """Generate a natural, chatbot-style response from analysis results."""
+    """Generate a natural operations-agent response from analysis results."""
 
-    priority_emoji = {
-        "critical": "🔴",
-        "high": "🟠",
-        "medium": "🟡",
-        "low": "🟢"
-    }
+    issue_label = analysis.issue_type.replace("/", " or ")
+    confidence_pct = int(round(analysis.confidence_score * 100))
 
-    issue_emoji = {
-        "server": "🖥️",
-        "network": "🌐",
-        "database": "🗄️",
-        "application": "📱",
-        "access/request": "🔐",
-        "unknown": "❓"
-    }
+    intro = (
+        f"I reviewed this as a {issue_label} issue with {analysis.priority} priority. "
+        f"I recommend routing it to {analysis.recommended_team}, and the likely impact area is {analysis.impacted_area}."
+    )
 
-    priority = analysis.priority
-    issue_type = analysis.issue_type
+    confidence_line = (
+        f"My confidence is around {confidence_pct}% based on the details provided."
+    )
 
-    response = f"""🔍 **Analysis Complete**
+    reasoning_line = (
+        f"Reasoning: {analysis.reasoning_summary}"
+    )
 
-{issue_emoji.get(issue_type, '📋')} *Issue Type:* {issue_type.title()}
-{priority_emoji.get(priority, '⚪')} *Priority:* {priority.upper()}
-👥 *Recommended Team:* {analysis.recommended_team}
-📍 *Impacted Area:* {analysis.impacted_area}
-📊 *Confidence:* {analysis.confidence_score * 100:.0f}%
+    steps_header = "Start with these troubleshooting actions:"
+    steps_body = "\n".join(
+        f"{idx}. {step}" for idx, step in enumerate(analysis.troubleshooting_steps, 1)
+    )
 
-**Troubleshooting Steps:**
-"""
+    follow_up = (
+        "If you can share logs, error codes, or user impact details, I can refine this triage further."
+    )
 
-    for i, step in enumerate(analysis.troubleshooting_steps, 1):
-        response += f"\n{i}. {step}"
-
-    response += f"\n\n💡 *Reasoning:* {analysis.reasoning_summary}"
-
-    return response
+    return (
+        f"{intro}\n\n"
+        f"{confidence_line}\n"
+        f"{reasoning_line}\n\n"
+        f"{steps_header}\n"
+        f"{steps_body}\n\n"
+        f"{follow_up}"
+    )
 
 
 if __name__ == "__main__":
