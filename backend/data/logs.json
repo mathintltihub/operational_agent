@@ -1289,5 +1289,45 @@
       "timestamp": "2026-04-13T04:49:13.960108"
     },
     "timestamp": "2026-04-13T04:49:13.960108"
+  },
+  {
+    "ticket_id": "ticket-559345f8",
+    "title": "high periority server incident",
+    "description": "high periority server incident",
+    "analysis_result": {
+      "ticket_id": "ticket-559345f8",
+      "issue_type": "server",
+      "priority": "critical",
+      "impacted_area": "...",
+      "recommended_team": "...",
+      "troubleshooting_steps": [
+        "step1",
+        "step2"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "...",
+      "timestamp": "2026-04-13T12:57:14.214164"
+    },
+    "timestamp": "2026-04-13T12:57:14.214164"
+  },
+  {
+    "ticket_id": "ticket-a25d9fb5",
+    "title": "high periority server incident",
+    "description": "high periority server incident",
+    "analysis_result": {
+      "ticket_id": "ticket-a25d9fb5",
+      "issue_type": "server",
+      "priority": "critical",
+      "impacted_area": "User workstations and internal applications",
+      "recommended_team": "Server Incident Response Team",
+      "troubleshooting_steps": [
+        "Verify server status with monitoring tools",
+        "Assess the scope of impact"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "Immediate investigation required due to potential data loss or service disruption.",
+      "timestamp": "2026-04-13T13:00:55.146025"
+    },
+    "timestamp": "2026-04-13T13:00:55.146025"
   }
 ]

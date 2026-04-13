@@ -6,6 +6,7 @@ import os
 import sys
 import uuid
 import logging
+import re
 from pathlib import Path
 from datetime import datetime
 from typing import List, Optional
@@ -198,6 +199,111 @@ def build_out_of_scope_reply() -> str:
     )
 
 
+VALID_ISSUE_TYPES = {"server", "network", "database", "application", "access/request", "security", "unknown"}
+VALID_PRIORITIES = {"critical", "high", "medium", "low"}
+VALID_CONFIDENCE = {"high", "medium", "low"}
+ISSUE_TYPE_ALIASES = {
+    "access": "access/request",
+    "access request": "access/request",
+    "access-request": "access/request",
+}
+
+
+def _is_weak_text(value: str) -> bool:
+    """Detect placeholder-style or unusable LLM text."""
+    if not isinstance(value, str):
+        return True
+    normalized = value.strip().lower()
+    if not normalized:
+        return True
+    if normalized in {"...", "..", ".", "n/a", "na", "none", "null", "tbd", "unknown"}:
+        return True
+    if re.fullmatch(r"step\s*\d+", normalized):
+        return True
+    return False
+
+
+def _normalize_issue_type(value: str) -> Optional[str]:
+    """Normalize and validate issue type values from the LLM."""
+    if _is_weak_text(value):
+        return None
+    normalized = value.strip().lower().replace("_", " ").replace("-", " ")
+    if "|" in normalized:
+        normalized = normalized.split("|", 1)[0].strip()
+    normalized = ISSUE_TYPE_ALIASES.get(normalized, normalized)
+    normalized = normalized.replace(" ", "/") if normalized == "access request" else normalized
+    return normalized if normalized in VALID_ISSUE_TYPES else None
+
+
+def _normalize_priority(value: str) -> Optional[str]:
+    """Normalize and validate priority values from the LLM."""
+    if _is_weak_text(value):
+        return None
+    normalized = value.strip().lower()
+    return normalized if normalized in VALID_PRIORITIES else None
+
+
+def _normalize_confidence(value: str) -> Optional[str]:
+    """Normalize confidence labels from the LLM."""
+    if _is_weak_text(value):
+        return None
+    normalized = value.strip().lower()
+    return normalized if normalized in VALID_CONFIDENCE else None
+
+
+def _clean_solution_steps(steps) -> list[str]:
+    """Keep only meaningful troubleshooting steps."""
+    if not isinstance(steps, list):
+        return []
+    cleaned = []
+    for item in steps:
+        if not isinstance(item, str):
+            continue
+        step = re.sub(r"^\s*\d+[\).\-\s]*", "", item).strip()
+        if _is_weak_text(step):
+            continue
+        if len(step) < 8:
+            continue
+        cleaned.append(step)
+    return cleaned
+
+
+def _merge_llm_ticket_into_result(llm_result: dict, result: dict) -> dict:
+    """Merge safe LLM fields into a skill-based ticket result."""
+    merged = dict(result)
+
+    llm_issue_type = _normalize_issue_type(llm_result.get("issue_type", ""))
+    if llm_issue_type and llm_issue_type != "unknown":
+        merged["issue_type"] = llm_issue_type
+
+    llm_priority = _normalize_priority(llm_result.get("priority", ""))
+    if llm_priority:
+        merged["priority"] = llm_priority
+
+    team = llm_result.get("assigned_team", "")
+    if not _is_weak_text(team):
+        merged["assigned_team"] = team.strip()
+
+    impacted_area = llm_result.get("impacted_area", "")
+    if not _is_weak_text(impacted_area):
+        merged["impacted_area"] = impacted_area.strip()
+
+    analysis = llm_result.get("analysis", "")
+    if not _is_weak_text(analysis):
+        merged["analysis"] = analysis.strip()
+
+    cleaned_steps = _clean_solution_steps(llm_result.get("solution_steps"))
+    if cleaned_steps:
+        merged["solution_steps"] = cleaned_steps
+
+    conf_level = _normalize_confidence(llm_result.get("confidence", ""))
+    if conf_level:
+        merged["confidence"] = conf_level
+        merged["confidence_score"] = 0.85 if conf_level == "high" else 0.6 if conf_level == "medium" else 0.4
+
+    return merged
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
@@ -250,23 +356,10 @@ async def analyze_ticket(request: TicketRequest):
 
                 # Try to parse LLM response
                 import json
-                import re
-                json_match = re.search(r'\{[^{}]*\}', llm_response, re.DOTALL)
+                json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
                 if json_match:
                     llm_result = json.loads(json_match.group())
-                    # Use LLM results if available, but keep skills as fallback
-                    if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
-                        result["issue_type"] = llm_result.get("issue_type", result["issue_type"])
-                        result["priority"] = llm_result.get("priority", result["priority"])
-                        result["assigned_team"] = llm_result.get("assigned_team", result["assigned_team"])
-                        result["impacted_area"] = llm_result.get("impacted_area", result["impacted_area"])
-                        if llm_result.get("solution_steps"):
-                            result["solution_steps"] = llm_result.get("solution_steps")
-                        if llm_result.get("analysis"):
-                            result["analysis"] = llm_result.get("analysis")
-                        confidence_val = llm_result.get("confidence", "medium")
-                        result["confidence"] = confidence_val
-                        result["confidence_score"] = 0.85 if confidence_val == "high" else 0.6 if confidence_val == "medium" else 0.4
+                    result = _merge_llm_ticket_into_result(llm_result, result)
             except Exception as e:
                 logger.warning(f"LLM analysis failed, using skill-based result: {e}")
 
@@ -349,7 +442,6 @@ async def chat(request: ChatRequest):
     Maintains conversation history and provides chatbot-style responses.
     """
     import json
-    import re
 
     # Generate or retrieve conversation ID
     conversation_id = request.conversation_id or f"conv-{uuid.uuid4().hex[:8]}"
@@ -434,20 +526,7 @@ async def chat(request: ChatRequest):
 
         # Merge structured ticket analysis - use LLM JSON if available, otherwise use skills.
         if llm_result:
-            if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
-                skill_result["issue_type"] = llm_result.get("issue_type", skill_result["issue_type"])
-                skill_result["priority"] = llm_result.get("priority", skill_result["priority"])
-                skill_result["assigned_team"] = llm_result.get("assigned_team", skill_result["assigned_team"])
-                skill_result["impacted_area"] = llm_result.get("impacted_area", skill_result["impacted_area"])
-                if llm_result.get("solution_steps"):
-                    skill_result["solution_steps"] = llm_result.get("solution_steps")
-                if llm_result.get("analysis"):
-                    skill_result["analysis"] = llm_result.get("analysis")
-
-                # Convert confidence string to score
-                conf_level = llm_result.get("confidence", "medium")
-                skill_result["confidence"] = conf_level
-                skill_result["confidence_score"] = 0.85 if conf_level == "high" else 0.6 if conf_level == "medium" else 0.4
+            skill_result = _merge_llm_ticket_into_result(llm_result, skill_result)
         elif request.use_llm and not check_ollama_health() and is_identity_question(request.message):
             # Keep a local fallback only when Ollama is unavailable.
             assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
