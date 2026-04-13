@@ -124,6 +124,79 @@ Respond with ONLY valid JSON in this exact structure:
 
 Important: Be concise, accurate, and do NOT hallucinate. If unclear, use "unknown" issue_type and route to Manual Review."""
 
+CHAT_SYSTEM_PROMPT = """You are Operations Agent, an IT operations assistant running on a local Ollama model.
+
+You must handle every user message directly and respond with ONLY valid JSON.
+
+Return one of these three shapes:
+
+For allowed operations-agent conversation such as greetings, identity, help, thanks, status, or usage questions about this assistant:
+{
+  "mode": "conversation",
+  "reply": "your natural language reply"
+}
+
+For IT issues or support-ticket style messages:
+{
+  "mode": "ticket",
+  "issue_type": "server|network|database|application|access/request|security|unknown",
+  "priority": "critical|high|medium|low",
+  "assigned_team": "...",
+  "impacted_area": "...",
+  "analysis": "...",
+  "solution_steps": ["step1", "step2"],
+  "confidence": "high|medium|low"
+}
+
+For questions outside IT operations scope:
+{
+  "mode": "out_of_scope",
+  "reply": "a short refusal that redirects the user back to IT operations topics"
+}
+
+Decision rules:
+- Use "conversation" only for greetings, name/identity questions about this assistant, capabilities, thanks, health/status, and how to use this operations assistant.
+- Use "ticket" only when the user is describing an IT issue, incident, access request, outage, troubleshooting request, or support task.
+- Use "out_of_scope" for general knowledge, personal advice, schoolwork, meanings of names, creative writing, coding unrelated to IT operations triage, or any non-operations topic.
+- If the issue is unclear but still looks like a support request, use "ticket" with issue_type "unknown".
+- Do not wrap JSON in markdown.
+- Do not add any extra text outside the JSON object.
+- Never answer out-of-scope questions directly. Redirect the user to IT operations issues, incidents, access requests, routing, troubleshooting, or platform usage.
+"""
+
+
+def is_operations_related_message(message: str) -> bool:
+    """Heuristic guardrail to keep the assistant scoped to IT operations."""
+    normalized = message.lower()
+
+    allowed_conversation_phrases = [
+        "hello", "hi", "hey", "thanks", "thank you",
+        "what is your name", "who are you", "what can you do",
+        "help", "how does this work", "how do i use you",
+        "status", "are you online", "are you working",
+    ]
+    if any(phrase in normalized for phrase in allowed_conversation_phrases):
+        return True
+
+    operations_keywords = [
+        "ticket", "incident", "outage", "production", "server", "network",
+        "database", "application", "access", "permission", "login", "password",
+        "vpn", "dns", "latency", "firewall", "cpu", "memory", "disk",
+        "error", "http 500", "500", "503", "timeout", "ssh", "api",
+        "deployment", "service", "alert", "replication", "security",
+        "breach", "support", "troubleshoot", "triage", "team", "assign",
+    ]
+    return any(keyword in normalized for keyword in operations_keywords)
+
+
+def build_out_of_scope_reply() -> str:
+    """Short domain restriction message for non-operations prompts."""
+    return (
+        "I'm Operations Agent, so I can only help with IT operations tasks like incident triage, "
+        "ticket analysis, priority detection, team routing, access requests, and troubleshooting. "
+        "Please describe an IT operations issue or support request."
+    )
+
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -275,8 +348,8 @@ async def chat(request: ChatRequest):
     Uses Ollama (llama3) for intelligent analysis with skill-based fallback.
     Maintains conversation history and provides chatbot-style responses.
     """
-    import re
     import json
+    import re
 
     # Generate or retrieve conversation ID
     conversation_id = request.conversation_id or f"conv-{uuid.uuid4().hex[:8]}"
@@ -293,47 +366,73 @@ async def chat(request: ChatRequest):
     if len(conversations[conversation_id]) > 6:  # 3 user + 3 assistant
         conversations[conversation_id] = conversations[conversation_id][-6:]
 
-    # --- Identity skill: handle greetings / who-are-you locally ---
-    if is_identity_question(request.message):
-        assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
-        conversations[conversation_id].append(assistant_message.model_dump())
-        return ChatResponse(
-            conversation_id=conversation_id,
-            message=assistant_message,
-            analysis=None
-        )
-
-    # --- Ticket analysis skill: for IT issues ---
     try:
-        # First, use skill-based analysis as fallback
+        # Always prepare local skill analysis as fallback for ticket-like requests.
         skill_result = execute_skills(request.message)
-        confidence = skill_result["confidence"]
-        confidence_score = skill_result["confidence_score"]
 
-        # Try LLM if available and requested
+        # Let the local Ollama model handle every message first.
         llm_result = None
+        llm_text_response = None
         if request.use_llm and check_ollama_health():
             try:
-                # Build context from recent conversation
                 context = ""
                 if len(conversations[conversation_id]) > 1:
                     context = "Recent conversation:\n"
                     for msg in conversations[conversation_id][-4:]:
                         context += f"{msg['role']}: {msg['content'][:200]}\n"
 
-                prompt = f"{SYSTEM_PROMPT}\n\n{context}\n\nUser issue: {request.message}\n\nRespond with ONLY valid JSON."
+                prompt = (
+                    f"{CHAT_SYSTEM_PROMPT}\n\n"
+                    f"{context}\n\n"
+                    f"User message: {request.message}\n"
+                )
 
-                llm_response = query_ollama(prompt, timeout=60)
+                llm_response = query_ollama(prompt, timeout=60, response_format="json")
 
-                # Parse LLM response
-                json_match = re.search(r'\{[^{}]*\}', llm_response, re.DOTALL)
+                json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
                 if json_match:
-                    llm_result = json.loads(json_match.group())
-                    logger.info(f"LLM parsed result: {llm_result}")
+                    llm_payload = json.loads(json_match.group())
+                    logger.info(f"LLM parsed result: {llm_payload}")
+
+                    if llm_payload.get("mode") == "conversation":
+                        llm_text_response = llm_payload.get("reply", "").strip()
+                    elif llm_payload.get("mode") == "ticket":
+                        llm_result = llm_payload
+                    elif llm_payload.get("mode") == "out_of_scope":
+                        llm_result = llm_payload
+                    else:
+                        llm_text_response = llm_response.strip()
+                else:
+                    llm_text_response = llm_response.strip()
             except Exception as e:
                 logger.warning(f"LLM analysis failed: {e}. Using skill-based result.")
 
-        # Merge results - use LLM if available, otherwise use skills
+        # Enforce domain restriction even if the model drifts out of scope.
+        if llm_result is None and llm_text_response and not is_operations_related_message(request.message):
+            llm_text_response = build_out_of_scope_reply()
+
+        if llm_result and llm_result.get("mode") == "out_of_scope":
+            assistant_message = ChatMessage(role="assistant", content=build_out_of_scope_reply())
+            conversations[conversation_id].append(assistant_message.model_dump())
+            return ChatResponse(
+                conversation_id=conversation_id,
+                message=assistant_message,
+                analysis=None,
+                structured=None
+            )
+
+        # Use plain-text LLM output for allowed operations conversation.
+        if llm_text_response:
+            assistant_message = ChatMessage(role="assistant", content=llm_text_response)
+            conversations[conversation_id].append(assistant_message.model_dump())
+            return ChatResponse(
+                conversation_id=conversation_id,
+                message=assistant_message,
+                analysis=None,
+                structured=None
+            )
+
+        # Merge structured ticket analysis - use LLM JSON if available, otherwise use skills.
         if llm_result:
             if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
                 skill_result["issue_type"] = llm_result.get("issue_type", skill_result["issue_type"])
@@ -349,6 +448,16 @@ async def chat(request: ChatRequest):
                 conf_level = llm_result.get("confidence", "medium")
                 skill_result["confidence"] = conf_level
                 skill_result["confidence_score"] = 0.85 if conf_level == "high" else 0.6 if conf_level == "medium" else 0.4
+        elif request.use_llm and not check_ollama_health() and is_identity_question(request.message):
+            # Keep a local fallback only when Ollama is unavailable.
+            assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
+            conversations[conversation_id].append(assistant_message.model_dump())
+            return ChatResponse(
+                conversation_id=conversation_id,
+                message=assistant_message,
+                analysis=None,
+                structured=None
+            )
 
         # Build TicketResponse
         analysis = TicketResponse(

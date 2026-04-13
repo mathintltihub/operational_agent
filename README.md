@@ -1,38 +1,28 @@
 # Operations Agent
 
-Local-first IT operations triage assistant with a FastAPI backend, chat-style frontend, JSON logging, and optional Ollama-powered analysis.
+Operations Agent is a local-first IT operations triage assistant with a FastAPI backend, a lightweight chat frontend, deterministic skill-based analysis, and optional Ollama-powered enrichment.
 
-## Overview
+It is designed for support-style workflows such as incident intake, priority estimation, team routing, and troubleshooting guidance without requiring any cloud dependency.
 
-Operations Agent helps triage IT support issues by turning a free-form problem description into:
+## What It Does
 
-- an issue category
-- a priority level
-- a recommended team
-- an impacted area summary
-- troubleshooting steps
-- a confidence score
+- accepts free-form IT issue descriptions through API or chat UI
+- classifies the issue type
+- estimates priority
+- recommends the owning team
+- summarizes impacted area
+- suggests next troubleshooting steps
+- logs analysis results locally
 
-The app is designed to work locally. When Ollama is running, it can enrich the classification with a local LLM. When Ollama is unavailable, the backend falls back to deterministic skill and keyword-based logic.
+When Ollama is available, the backend uses a local model to improve analysis. When it is not available, the app continues working with rule-based logic.
 
-## Current Stack
+## Tech Stack
 
 - Backend: FastAPI
 - Frontend: static HTML, CSS, and vanilla JavaScript
-- LLM option: Ollama at `http://localhost:11434`
+- Optional local LLM: Ollama
 - Default Ollama model: `llama3.2:3b`
-- Logging: local JSON file at `backend/data/logs.json`
-
-## Features
-
-- Conversational ticket intake through a chat UI
-- Structured ticket analysis via REST API
-- Local-first deployment with no cloud dependency required
-- Ollama health detection and graceful fallback behavior
-- Sample tickets for demos and testing
-- Conversation memory for recent chat history
-- Local analysis log retrieval and cleanup endpoints
-- Identity/help responses handled without calling the LLM
+- Log storage: `backend/data/logs.json`
 
 ## Project Structure
 
@@ -41,7 +31,10 @@ operational_agent/
 ├── backend/
 │   ├── data/
 │   │   └── logs.json
+│   ├── prompts/
+│   │   └── operations_agent_prompt.txt
 │   ├── services/
+│   │   ├── agent_skills.py
 │   │   ├── analyzer.py
 │   │   ├── identity_skill.py
 │   │   ├── logger.py
@@ -56,6 +49,7 @@ operational_agent/
 │   └── style.css
 ├── tests/
 │   └── test_api.py
+├── .env.example
 ├── package.json
 ├── requirements.txt
 └── README.md
@@ -64,7 +58,7 @@ operational_agent/
 ## Requirements
 
 - Python 3.10+
-- Node.js and npm if you want to use the frontend dev scripts
+- Node.js and npm for the frontend dev server
 - Ollama only if you want local LLM-backed analysis
 
 ## Quick Start
@@ -87,22 +81,21 @@ python3 backend/main.py
 
 Backend URLs:
 
-- Local: `http://127.0.0.1:8000`
+- API: `http://127.0.0.1:8000`
 - Docs: `http://127.0.0.1:8000/docs`
 
 ### 3. Start the frontend
 
-If Node dependencies are already installed:
-
 ```bash
+npm install
 npm run frontend
 ```
 
-This serves the frontend at:
+Frontend URL:
 
 - `http://127.0.0.1:5173`
 
-You can also run backend and frontend together:
+To run backend and frontend together:
 
 ```bash
 npm run dev
@@ -110,7 +103,7 @@ npm run dev
 
 ## Ollama Setup
 
-Ollama is optional but recommended if you want the app to augment the local rule-based analysis with an LLM.
+Ollama is optional. If it is unavailable, the backend falls back to deterministic analysis.
 
 ### 1. Start Ollama
 
@@ -118,45 +111,46 @@ Ollama is optional but recommended if you want the app to augment the local rule
 ollama serve
 ```
 
-### 2. Pull the configured model
+### 2. Pull the default model
 
 ```bash
 ollama pull llama3.2:3b
 ```
 
-### 3. Verify status
-
-Once the backend is running, check:
+### 3. Check backend model status
 
 ```bash
 curl http://127.0.0.1:8000/ollama-status
 ```
 
-If Ollama is unavailable, the app still runs and returns fallback analysis.
+You can also override defaults with environment variables:
+
+- `OLLAMA_BASE_URL`
+- `OLLAMA_MODEL`
 
 ## API Endpoints
 
 ### System
 
-- `GET /health` - API health status
-- `GET /ollama-status` - whether Ollama is reachable and which model is configured
+- `GET /health` - health and version status
+- `GET /ollama-status` - Ollama connectivity, endpoint, and model
 
 ### Ticket Analysis
 
-- `POST /analyze-ticket` - analyze a structured ticket with `title` and `description`
-- `GET /sample-tickets` - fetch built-in sample tickets
+- `POST /analyze-ticket` - analyze a ticket from `title` and `description`
+- `GET /sample-tickets` - return built-in sample incidents
 
 ### Chat
 
-- `POST /chat` - conversational analysis endpoint
-- `GET /conversation/{conversation_id}` - retrieve recent conversation history
-- `DELETE /conversation/{conversation_id}` - delete a conversation from in-memory storage
+- `POST /chat` - chat-based triage and structured response generation
+- `GET /conversation/{conversation_id}` - fetch in-memory conversation history
+- `DELETE /conversation/{conversation_id}` - clear one conversation
 
 ### Logs
 
-- `GET /logs` - fetch recent analysis logs
-- `GET /logs/{ticket_id}` - fetch a specific log entry
-- `DELETE /logs` - clear all stored logs
+- `GET /logs` - list recent analysis logs
+- `GET /logs/{ticket_id}` - fetch one logged analysis result
+- `DELETE /logs` - clear stored log entries
 
 ## Example Requests
 
@@ -167,7 +161,7 @@ curl -X POST http://127.0.0.1:8000/analyze-ticket \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Production database timeout",
-    "description": "Users cannot log in and the app is timing out when connecting to PostgreSQL."
+    "description": "Users cannot log in and the app is timing out while connecting to PostgreSQL."
   }'
 ```
 
@@ -183,15 +177,15 @@ curl -X POST http://127.0.0.1:8000/chat \
 
 ## Frontend Behavior
 
-The frontend is a chat interface that:
+The frontend:
 
-- checks backend health on load
+- checks backend health on page load
 - sends messages to `POST /chat`
-- keeps a `conversation_id` client-side for continuity
-- renders a compact analysis card for structured results
-- opens a detailed modal for the full analysis payload
+- stores `conversation_id` client-side for chat continuity
+- renders a compact analysis card for ticket-style responses
+- opens a modal with expanded triage details
 
-## Running the Basic API Test Script
+## Running the Test Script
 
 Start the backend first, then run:
 
@@ -199,29 +193,29 @@ Start the backend first, then run:
 python3 tests/test_api.py
 ```
 
-The script checks:
+The script validates:
 
-- health
-- sample tickets
-- ticket analysis
-- logs
+- health endpoint
+- sample ticket endpoint
+- ticket analysis endpoint
+- log retrieval
 
 ## Data and Persistence
 
-- Analysis logs are stored in `backend/data/logs.json`
-- Chat conversations are stored in memory only
+- analysis logs are stored in `backend/data/logs.json`
+- chat conversations are stored in memory only
 - restarting the backend clears conversation history
 
-## Known Caveats
+## Current Caveats
 
-- `.env.example` still contains older OpenAI-era setup text and does not reflect the current Ollama-based flow.
-- `requirements.txt` includes some libraries that are not central to the current local-first path.
-- `backend/main.py` references a `backend.services.agent_skills` module; make sure that module exists in your working tree if you are running the current backend entrypoint.
+- `.env.example` is outdated and still references an older OpenAI-based setup
+- `requirements.txt` includes packages that are not essential for the current Ollama-first local flow
+- conversation history is not persisted beyond process memory
 
-## Next Improvements
+## Suggested Next Improvements
 
-- Align `.env.example` with the current Ollama workflow
-- Trim unused dependencies from `requirements.txt`
-- Persist conversations beyond process memory
-- Add automated tests for the `/chat` and conversation endpoints
-- Expose configurable model selection instead of hardcoding `llama3.2:3b`
+- update `.env.example` to reflect the Ollama configuration
+- trim unused Python dependencies
+- add automated coverage for `/chat` and conversation endpoints
+- persist conversations beyond runtime memory
+- make the Ollama model configurable from the UI

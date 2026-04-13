@@ -1,28 +1,33 @@
 """
 Ollama LLM client for local inference (llama3 model).
 """
-import requests
 import json
 import logging
+import os
+from typing import Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama3.2:3b"
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+OLLAMA_API_URL = f"{OLLAMA_BASE_URL}/api/generate"
+OLLAMA_TAGS_URL = f"{OLLAMA_BASE_URL}/api/tags"
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 DEFAULT_TIMEOUT = 90
 
 
 def check_ollama_health() -> bool:
     """Check if Ollama service is running and accessible."""
     try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        response = requests.get(OLLAMA_TAGS_URL, timeout=5)
         return response.status_code == 200
     except Exception:
         return False
 
 
 def query_ollama(prompt: str, model: str = OLLAMA_MODEL, stream: bool = False,
-                  timeout: int = DEFAULT_TIMEOUT) -> str:
+                  timeout: int = DEFAULT_TIMEOUT, response_format: Optional[str] = None) -> str:
     """
     Query the local Ollama model and return the response text.
 
@@ -45,6 +50,9 @@ def query_ollama(prompt: str, model: str = OLLAMA_MODEL, stream: bool = False,
             "num_ctx": 4096,
         }
     }
+
+    if response_format:
+        payload["format"] = response_format
 
     try:
         if stream:

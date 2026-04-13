@@ -1103,5 +1103,191 @@
       "timestamp": "2026-04-11T05:56:31.631343"
     },
     "timestamp": "2026-04-11T05:56:31.631343"
+  },
+  {
+    "ticket_id": "ticket-1729a720",
+    "title": "Application returning 500 error",
+    "description": "Application returning 500 error",
+    "analysis_result": {
+      "ticket_id": "ticket-1729a720",
+      "issue_type": "application",
+      "priority": "high",
+      "impacted_area": "User Access to Application Service",
+      "recommended_team": "Web Development Team",
+      "troubleshooting_steps": [
+        "Verify recent changes made to the web application's configuration files",
+        "Check for any reported bugs that match the error symptoms"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "The HTTP 500 error indicates a server-side issue, which could be due to various reasons such as misconfigurations or errors in the application code.",
+      "timestamp": "2026-04-13T04:37:37.620378"
+    },
+    "timestamp": "2026-04-13T04:37:37.620378"
+  },
+  {
+    "ticket_id": "ticket-c895e89f",
+    "title": "hello buddy",
+    "description": "hello buddy",
+    "analysis_result": {
+      "ticket_id": "ticket-c895e89f",
+      "issue_type": "server",
+      "priority": "critical",
+      "impacted_area": "all services affected by the downtime.",
+      "recommended_team": "Server Operations Team",
+      "troubleshooting_steps": [
+        "Step1: Verify server status with monitoring tools to confirm downtime",
+        "Step2: Check system logs for error messages and patterns of failure"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "Immediate investigation into server hardware or software failure is required to restore service as quickly as possible. Previous logs and error reports should be reviewed for clues on potential causes of the outage, such as overload, unscheduled maintenance, or security breaches.",
+      "timestamp": "2026-04-13T04:38:40.533329"
+    },
+    "timestamp": "2026-04-13T04:38:40.533329"
+  },
+  {
+    "ticket_id": "ticket-a9922454",
+    "title": "Production application returning HTTP 500 for all ",
+    "description": "Production application returning HTTP 500 for all users",
+    "analysis_result": {
+      "ticket_id": "ticket-a9922454",
+      "issue_type": "application",
+      "priority": "critical",
+      "impacted_area": "all end-users within the production environment",
+      "recommended_team": "Production Support Team",
+      "troubleshooting_steps": [
+        "Immediately notify affected stakeholders of the outage",
+        "Rollback any recent application updates as an initial step"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The HTTP 500 error indicates a server-side issue that is affecting all users, suggesting it could be related to recent code deployments or infrastructure changes.",
+      "timestamp": "2026-04-13T04:38:49.801868"
+    },
+    "timestamp": "2026-04-13T04:38:49.801868"
+  },
+  {
+    "ticket_id": "ticket-4fbd55ee",
+    "title": "hello buddy",
+    "description": "hello buddy",
+    "analysis_result": {
+      "ticket_id": "ticket-4fbd55ee",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unclear - requires manual review",
+      "recommended_team": "Manual Review",
+      "troubleshooting_steps": [
+        "Request more detailed information from user",
+        "Ask for specific error messages or screenshots",
+        "Clarify the scope and impact of the issue",
+        "Escalate to team lead for manual review"
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "The ticket lacks specific technical details, making accurate classification difficult. Routed to Manual Review for human assessment.",
+      "timestamp": "2026-04-13T04:39:48.413801"
+    },
+    "timestamp": "2026-04-13T04:39:48.413801"
+  },
+  {
+    "ticket_id": "ticket-891ada28",
+    "title": "Production application returning HTTP 500 for all ",
+    "description": "Production application returning HTTP 500 for all users",
+    "analysis_result": {
+      "ticket_id": "ticket-891ada28",
+      "issue_type": "application",
+      "priority": "critical",
+      "impacted_area": "Application services and functionality",
+      "recommended_team": "Application Support",
+      "troubleshooting_steps": [
+        "Check application logs for error messages",
+        "Verify application service status",
+        "Test application endpoints manually",
+        "Review recent deployments or code changes",
+        "Check application dependencies and integrations"
+      ],
+      "confidence_score": 0.8,
+      "reasoning_summary": "Classified as application issue with critical priority based on keyword analysis. Confidence: 80%.",
+      "timestamp": "2026-04-13T04:40:10.407287"
+    },
+    "timestamp": "2026-04-13T04:40:10.407287"
+  },
+  {
+    "ticket_id": "ticket-c63cd345",
+    "title": "Production application returning HTTP 500 for all ",
+    "description": "Production application returning HTTP 500 for all users",
+    "analysis_result": {
+      "ticket_id": "ticket-c63cd345",
+      "issue_type": "application",
+      "priority": "critical",
+      "impacted_area": "All Users in Production Environment",
+      "recommended_team": "Production Support Team",
+      "troubleshooting_steps": [
+        "1. Check server logs for specific errors or warnings.",
+        "2. Verify recent changes to production code and rollback if necessary."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The HTTP 500 error indicates a server-side issue that is preventing the application from functioning correctly for all users.",
+      "timestamp": "2026-04-13T04:41:13.107051"
+    },
+    "timestamp": "2026-04-13T04:41:13.107051"
+  },
+  {
+    "ticket_id": "ticket-5098d22e",
+    "title": "Cannot access internal network",
+    "description": "Cannot access internal network",
+    "analysis_result": {
+      "ticket_id": "ticket-5098d22e",
+      "issue_type": "network|access",
+      "priority": "critical",
+      "impacted_area": "Internal Network Access",
+      "recommended_team": "Network Operations Team",
+      "troubleshooting_steps": [
+        "Verify user's account status and permissions.",
+        "Check if there are any known outages affecting the entire network."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "User reports an inability to connect to the internal network, which is critical for their work.",
+      "timestamp": "2026-04-13T04:43:07.163903"
+    },
+    "timestamp": "2026-04-13T04:43:07.163903"
+  },
+  {
+    "ticket_id": "ticket-cc1fde66",
+    "title": "the server show's the multiple error'",
+    "description": "the server show's the multiple error'",
+    "analysis_result": {
+      "ticket_id": "ticket-cc1fde66",
+      "issue_type": "server",
+      "priority": "high",
+      "impacted_area": "Internal Server Access",
+      "recommended_team": "Server Operations Team",
+      "troubleshooting_steps": [
+        "Verify user permissions and access rights",
+        "Check for recent changes to firewall settings",
+        "Review server logs for specific error codes"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "The server is displaying multiple error messages, indicating potential issues with the system's functionality or connectivity.",
+      "timestamp": "2026-04-13T04:44:22.118779"
+    },
+    "timestamp": "2026-04-13T04:44:22.118779"
+  },
+  {
+    "ticket_id": "ticket-6ddb82fd",
+    "title": "Production application returning HTTP 500 for all ",
+    "description": "Production application returning HTTP 500 for all users",
+    "analysis_result": {
+      "ticket_id": "ticket-6ddb82fd",
+      "issue_type": "application",
+      "priority": "critical",
+      "impacted_area": "Production Environment",
+      "recommended_team": "Web Operations Team",
+      "troubleshooting_steps": [
+        "Check the application's logs for detailed errors.",
+        "Validate recent code deployments and configurations."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The HTTP 500 error indicates a server-side issue that is affecting all users.",
+      "timestamp": "2026-04-13T04:49:13.960108"
+    },
+    "timestamp": "2026-04-13T04:49:13.960108"
   }
 ]
