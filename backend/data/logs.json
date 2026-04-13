@@ -1792,5 +1792,78 @@
         "safety_notice": "Use change-control and verification steps before making production-impacting changes."
       }
     }
+  },
+  {
+    "ticket_id": "ticket-2df0f8c5",
+    "title": "VPN users cannot access internal portal",
+    "description": "Remote employees report they cannot connect to the company portal through VPN.",
+    "analysis_result": {
+      "ticket_id": "ticket-2df0f8c5",
+      "issue_type": "network",
+      "priority": "high",
+      "impacted_area": "remote accessibility",
+      "recommended_team": "Network Operations Team",
+      "troubleshooting_steps": [
+        "Verify if there are any reported outages or maintenance windows for the company network infrastructure that could impact VPN connections.",
+        "Check and confirm proper configuration of user accounts on their end, including correct credentials being used."
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "Potential VPN connectivity issue affecting remote users' ability to reach the internal portal.",
+      "timestamp": "2026-04-13T13:46:46.961578"
+    },
+    "timestamp": "2026-04-13T13:46:46.961578",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "medium",
+        "classification_signals": [
+          "vpn",
+          "port"
+        ],
+        "priority_signals": [
+          "cannot access"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-09580806",
+    "title": "Need access to production server",
+    "description": "I need sudo access to investigate issues. I have manager approval.",
+    "analysis_result": {
+      "ticket_id": "ticket-09580806",
+      "issue_type": "access/request",
+      "priority": "low",
+      "impacted_area": "Production Server Access Controls",
+      "recommended_team": "Security and Compliance Team",
+      "troubleshooting_steps": [
+        "Verify manager's approval documentation and credentials with HR department if necessary."
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "The ticket indicates a request for elevated privileges, which may not be urgent but requires proper authorization.",
+      "timestamp": "2026-04-13T13:46:54.403152"
+    },
+    "timestamp": "2026-04-13T13:46:54.403152",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "medium",
+        "classification_signals": [
+          "access",
+          "sudo"
+        ],
+        "priority_signals": [],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
   }
 ]
