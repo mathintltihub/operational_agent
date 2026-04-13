@@ -34,15 +34,14 @@ from backend.schemas import (
 )
 from backend.services.ollama_client import query_ollama, check_ollama_health, OLLAMA_MODEL
 from backend.services.agent_skills import (
-    classify_issue,
-    detect_priority,
-    route_to_team,
-    suggest_solution,
-    calculate_confidence,
-    get_impacted_area,
-    confidence_to_level,
     execute_skills
 )
+from backend.services.chat_policy import (
+    CHAT_SYSTEM_PROMPT,
+    is_operations_related_message,
+    build_out_of_scope_reply,
+)
+from backend.services.response_quality import merge_llm_ticket_into_result
 from backend.services.logger import logger as analysis_logger
 from backend.services.sample_data import SAMPLE_TICKETS
 from backend.services.identity_skill import is_identity_question, get_skill_response
@@ -90,6 +89,16 @@ app.add_middleware(
 # In-memory conversation store (for demo purposes)
 conversations = {}
 
+# Runtime mode controls
+FORCE_MOCK_MODE = os.getenv("FORCE_MOCK_MODE", "false").lower() in {"1", "true", "yes"}
+
+
+def get_runtime_mode() -> str:
+    """Runtime mode summary: llm, mock, or forced-mock."""
+    if FORCE_MOCK_MODE:
+        return "forced-mock"
+    return "llm" if check_ollama_health() else "mock"
+
 # System prompt for LLaMA
 SYSTEM_PROMPT = """You are an IT Operations Triage Assistant. Your role is to analyze support tickets and classify them accurately.
 
@@ -125,195 +134,20 @@ Respond with ONLY valid JSON in this exact structure:
 
 Important: Be concise, accurate, and do NOT hallucinate. If unclear, use "unknown" issue_type and route to Manual Review."""
 
-CHAT_SYSTEM_PROMPT = """You are Operations Agent, an IT operations assistant running on a local Ollama model.
-
-You must handle every user message directly and respond with ONLY valid JSON.
-
-Return one of these three shapes:
-
-For allowed operations-agent conversation such as greetings, identity, help, thanks, status, or usage questions about this assistant:
-{
-  "mode": "conversation",
-  "reply": "your natural language reply"
-}
-
-For IT issues or support-ticket style messages:
-{
-  "mode": "ticket",
-  "issue_type": "server|network|database|application|access/request|security|unknown",
-  "priority": "critical|high|medium|low",
-  "assigned_team": "...",
-  "impacted_area": "...",
-  "analysis": "...",
-  "solution_steps": ["step1", "step2"],
-  "confidence": "high|medium|low"
-}
-
-For questions outside IT operations scope:
-{
-  "mode": "out_of_scope",
-  "reply": "a short refusal that redirects the user back to IT operations topics"
-}
-
-Decision rules:
-- Use "conversation" only for greetings, name/identity questions about this assistant, capabilities, thanks, health/status, and how to use this operations assistant.
-- Use "ticket" only when the user is describing an IT issue, incident, access request, outage, troubleshooting request, or support task.
-- Use "out_of_scope" for general knowledge, personal advice, schoolwork, meanings of names, creative writing, coding unrelated to IT operations triage, or any non-operations topic.
-- If the issue is unclear but still looks like a support request, use "ticket" with issue_type "unknown".
-- Do not wrap JSON in markdown.
-- Do not add any extra text outside the JSON object.
-- Never answer out-of-scope questions directly. Redirect the user to IT operations issues, incidents, access requests, routing, troubleshooting, or platform usage.
-"""
-
-
-def is_operations_related_message(message: str) -> bool:
-    """Heuristic guardrail to keep the assistant scoped to IT operations."""
-    normalized = message.lower()
-
-    allowed_conversation_phrases = [
-        "hello", "hi", "hey", "thanks", "thank you",
-        "what is your name", "who are you", "what can you do",
-        "help", "how does this work", "how do i use you",
-        "status", "are you online", "are you working",
-    ]
-    if any(phrase in normalized for phrase in allowed_conversation_phrases):
-        return True
-
-    operations_keywords = [
-        "ticket", "incident", "outage", "production", "server", "network",
-        "database", "application", "access", "permission", "login", "password",
-        "vpn", "dns", "latency", "firewall", "cpu", "memory", "disk",
-        "error", "http 500", "500", "503", "timeout", "ssh", "api",
-        "deployment", "service", "alert", "replication", "security",
-        "breach", "support", "troubleshoot", "triage", "team", "assign",
-    ]
-    return any(keyword in normalized for keyword in operations_keywords)
-
-
-def build_out_of_scope_reply() -> str:
-    """Short domain restriction message for non-operations prompts."""
-    return (
-        "I'm Operations Agent, so I can only help with IT operations tasks like incident triage, "
-        "ticket analysis, priority detection, team routing, access requests, and troubleshooting. "
-        "Please describe an IT operations issue or support request."
-    )
-
-
-VALID_ISSUE_TYPES = {"server", "network", "database", "application", "access/request", "security", "unknown"}
-VALID_PRIORITIES = {"critical", "high", "medium", "low"}
-VALID_CONFIDENCE = {"high", "medium", "low"}
-ISSUE_TYPE_ALIASES = {
-    "access": "access/request",
-    "access request": "access/request",
-    "access-request": "access/request",
-}
-
-
-def _is_weak_text(value: str) -> bool:
-    """Detect placeholder-style or unusable LLM text."""
-    if not isinstance(value, str):
-        return True
-    normalized = value.strip().lower()
-    if not normalized:
-        return True
-    if normalized in {"...", "..", ".", "n/a", "na", "none", "null", "tbd", "unknown"}:
-        return True
-    if re.fullmatch(r"step\s*\d+", normalized):
-        return True
-    return False
-
-
-def _normalize_issue_type(value: str) -> Optional[str]:
-    """Normalize and validate issue type values from the LLM."""
-    if _is_weak_text(value):
-        return None
-    normalized = value.strip().lower().replace("_", " ").replace("-", " ")
-    if "|" in normalized:
-        normalized = normalized.split("|", 1)[0].strip()
-    normalized = ISSUE_TYPE_ALIASES.get(normalized, normalized)
-    normalized = normalized.replace(" ", "/") if normalized == "access request" else normalized
-    return normalized if normalized in VALID_ISSUE_TYPES else None
-
-
-def _normalize_priority(value: str) -> Optional[str]:
-    """Normalize and validate priority values from the LLM."""
-    if _is_weak_text(value):
-        return None
-    normalized = value.strip().lower()
-    return normalized if normalized in VALID_PRIORITIES else None
-
-
-def _normalize_confidence(value: str) -> Optional[str]:
-    """Normalize confidence labels from the LLM."""
-    if _is_weak_text(value):
-        return None
-    normalized = value.strip().lower()
-    return normalized if normalized in VALID_CONFIDENCE else None
-
-
-def _clean_solution_steps(steps) -> list[str]:
-    """Keep only meaningful troubleshooting steps."""
-    if not isinstance(steps, list):
-        return []
-    cleaned = []
-    for item in steps:
-        if not isinstance(item, str):
-            continue
-        step = re.sub(r"^\s*\d+[\).\-\s]*", "", item).strip()
-        if _is_weak_text(step):
-            continue
-        if len(step) < 8:
-            continue
-        cleaned.append(step)
-    return cleaned
-
-
-def _merge_llm_ticket_into_result(llm_result: dict, result: dict) -> dict:
-    """Merge safe LLM fields into a skill-based ticket result."""
-    merged = dict(result)
-
-    llm_issue_type = _normalize_issue_type(llm_result.get("issue_type", ""))
-    if llm_issue_type and llm_issue_type != "unknown":
-        merged["issue_type"] = llm_issue_type
-
-    llm_priority = _normalize_priority(llm_result.get("priority", ""))
-    if llm_priority:
-        merged["priority"] = llm_priority
-
-    team = llm_result.get("assigned_team", "")
-    if not _is_weak_text(team):
-        merged["assigned_team"] = team.strip()
-
-    impacted_area = llm_result.get("impacted_area", "")
-    if not _is_weak_text(impacted_area):
-        merged["impacted_area"] = impacted_area.strip()
-
-    analysis = llm_result.get("analysis", "")
-    if not _is_weak_text(analysis):
-        merged["analysis"] = analysis.strip()
-
-    cleaned_steps = _clean_solution_steps(llm_result.get("solution_steps"))
-    if cleaned_steps:
-        merged["solution_steps"] = cleaned_steps
-
-    conf_level = _normalize_confidence(llm_result.get("confidence", ""))
-    if conf_level:
-        merged["confidence"] = conf_level
-        merged["confidence_score"] = 0.85 if conf_level == "high" else 0.6 if conf_level == "medium" else 0.4
-
-    return merged
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
-    # Check Ollama status
-    ollama_status = "connected" if check_ollama_health() else "disconnected"
+    mode = get_runtime_mode()
+    is_healthy = check_ollama_health()
 
     return HealthResponse(
-        status="healthy" if check_ollama_health() else "degraded",
+        status="healthy" if (mode == "llm" or mode.endswith("mock")) else "degraded",
         version="2.0.0",
-        timestamp=datetime.utcnow().isoformat()
+        timestamp=datetime.utcnow().isoformat(),
+        mode=mode,
+        model=OLLAMA_MODEL if is_healthy else None,
     )
 
 
@@ -324,7 +158,9 @@ async def get_ollama_status():
     return {
         "status": "connected" if is_healthy else "disconnected",
         "model": OLLAMA_MODEL,
-        "endpoint": "http://localhost:11434"
+        "endpoint": "http://localhost:11434",
+        "mode": get_runtime_mode(),
+        "force_mock_mode": FORCE_MOCK_MODE,
     }
 
 
@@ -344,12 +180,13 @@ async def analyze_ticket(request: TicketRequest):
         # Combine title and description for analysis
         full_description = f"Title: {request.title}\nDescription: {request.description}"
 
-        # Execute skills to get analysis
+        # Execute skills baseline result
         result = execute_skills(full_description)
+        inference_source = "deterministic_skills"
+        llm_used = False
 
-        # Also try LLM if available
-        llm_result = None
-        if check_ollama_health():
+        # Refine with LLM when available and mock mode is not forced
+        if not FORCE_MOCK_MODE and check_ollama_health():
             try:
                 prompt = f"{SYSTEM_PROMPT}\n\nTitle: {request.title}\nDescription: {request.description}\n\nRespond with ONLY valid JSON."
                 llm_response = query_ollama(prompt)
@@ -359,7 +196,9 @@ async def analyze_ticket(request: TicketRequest):
                 json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
                 if json_match:
                     llm_result = json.loads(json_match.group())
-                    result = _merge_llm_ticket_into_result(llm_result, result)
+                    result = merge_llm_ticket_into_result(llm_result, result)
+                    inference_source = "ollama_refined"
+                    llm_used = True
             except Exception as e:
                 logger.warning(f"LLM analysis failed, using skill-based result: {e}")
 
@@ -380,7 +219,14 @@ async def analyze_ticket(request: TicketRequest):
         analysis_logger.log_analysis(
             title=request.title,
             description=request.description,
-            result=response
+            result=response,
+            metadata={
+                "endpoint": "/analyze-ticket",
+                "mode": get_runtime_mode(),
+                "inference_source": inference_source,
+                "llm_used": llm_used,
+                "audit": result.get("audit", {}),
+            },
         )
 
         return response
@@ -461,11 +307,13 @@ async def chat(request: ChatRequest):
     try:
         # Always prepare local skill analysis as fallback for ticket-like requests.
         skill_result = execute_skills(request.message)
+        llm_available = (not FORCE_MOCK_MODE) and check_ollama_health()
+        inference_source = "deterministic_skills"
 
         # Let the local Ollama model handle every message first.
         llm_result = None
         llm_text_response = None
-        if request.use_llm and check_ollama_health():
+        if request.use_llm and llm_available:
             try:
                 context = ""
                 if len(conversations[conversation_id]) > 1:
@@ -488,10 +336,13 @@ async def chat(request: ChatRequest):
 
                     if llm_payload.get("mode") == "conversation":
                         llm_text_response = llm_payload.get("reply", "").strip()
+                        inference_source = "ollama_conversation"
                     elif llm_payload.get("mode") == "ticket":
                         llm_result = llm_payload
+                        inference_source = "ollama_ticket"
                     elif llm_payload.get("mode") == "out_of_scope":
                         llm_result = llm_payload
+                        inference_source = "ollama_out_of_scope"
                     else:
                         llm_text_response = llm_response.strip()
                 else:
@@ -510,7 +361,11 @@ async def chat(request: ChatRequest):
                 conversation_id=conversation_id,
                 message=assistant_message,
                 analysis=None,
-                structured=None
+                structured={
+                    "mode": "out_of_scope",
+                    "source": inference_source,
+                    "runtime_mode": get_runtime_mode(),
+                }
             )
 
         # Use plain-text LLM output for allowed operations conversation.
@@ -521,13 +376,17 @@ async def chat(request: ChatRequest):
                 conversation_id=conversation_id,
                 message=assistant_message,
                 analysis=None,
-                structured=None
+                structured={
+                    "mode": "conversation",
+                    "source": inference_source,
+                    "runtime_mode": get_runtime_mode(),
+                }
             )
 
         # Merge structured ticket analysis - use LLM JSON if available, otherwise use skills.
         if llm_result:
-            skill_result = _merge_llm_ticket_into_result(llm_result, skill_result)
-        elif request.use_llm and not check_ollama_health() and is_identity_question(request.message):
+            skill_result = merge_llm_ticket_into_result(llm_result, skill_result)
+        elif request.use_llm and not llm_available and is_identity_question(request.message):
             # Keep a local fallback only when Ollama is unavailable.
             assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
             conversations[conversation_id].append(assistant_message.model_dump())
@@ -535,7 +394,11 @@ async def chat(request: ChatRequest):
                 conversation_id=conversation_id,
                 message=assistant_message,
                 analysis=None,
-                structured=None
+                structured={
+                    "mode": "conversation",
+                    "source": "identity_fallback",
+                    "runtime_mode": get_runtime_mode(),
+                }
             )
 
         # Build TicketResponse
@@ -561,7 +424,14 @@ async def chat(request: ChatRequest):
         analysis_logger.log_analysis(
             title=request.message[:50],
             description=request.message,
-            result=analysis
+            result=analysis,
+            metadata={
+                "endpoint": "/chat",
+                "mode": get_runtime_mode(),
+                "inference_source": inference_source,
+                "llm_used": inference_source.startswith("ollama"),
+                "audit": skill_result.get("audit", {}),
+            },
         )
 
         # Build structured response
@@ -569,9 +439,13 @@ async def chat(request: ChatRequest):
             "issue_type": skill_result["issue_type"],
             "priority": skill_result["priority"],
             "assigned_team": skill_result["assigned_team"],
+            "impacted_area": skill_result["impacted_area"],
             "analysis": skill_result["analysis"],
             "solution_steps": skill_result["solution_steps"],
-            "confidence": skill_result["confidence"]
+            "confidence": skill_result["confidence"],
+            "source": inference_source,
+            "runtime_mode": get_runtime_mode(),
+            "audit": skill_result.get("audit", {}),
         }
 
         return ChatResponse(
@@ -663,14 +537,16 @@ if __name__ == "__main__":
 
     # Ollama mode
     print("\n" + "="*60)
-    print("Operations Agent v2.0 - Running with Ollama (LLaMA 3)")
+    print("Operations Agent v2.0 - IT Operations Triage Copilot")
     print("="*60 + "\n")
 
     # Check Ollama status
-    if check_ollama_health():
-        print("✓ Ollama connected - LLaMA 3 model available")
+    if FORCE_MOCK_MODE:
+        print("! FORCE_MOCK_MODE enabled - using deterministic fallback")
+    elif check_ollama_health():
+        print(f"✓ Ollama connected - model: {OLLAMA_MODEL}")
     else:
-        print("⚠ Ollama not detected - using skill-based fallback")
+        print("⚠ Ollama not detected - using deterministic fallback")
         print("  Make sure Ollama is running: ollama serve")
 
     local_url = "http://127.0.0.1:8000"

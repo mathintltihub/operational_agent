@@ -1,12 +1,11 @@
 """
-Local JSON logging service for ticket analysis.
+Local JSON logging service for ticket analysis and audit metadata.
 """
 import json
-import os
-from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
-from backend.schemas import TicketResponse, LogEntry
+from typing import Dict, List, Optional
+
+from backend.schemas import TicketResponse
 
 
 class AnalysisLogger:
@@ -41,8 +40,14 @@ class AnalysisLogger:
         with open(self.log_file, 'w') as f:
             json.dump(logs, f, indent=2)
 
-    def log_analysis(self, title: str, description: str, result: TicketResponse):
-        """Log a ticket analysis result."""
+    def log_analysis(
+        self,
+        title: str,
+        description: str,
+        result: TicketResponse,
+        metadata: Optional[Dict] = None,
+    ):
+        """Log a ticket analysis result with optional audit metadata."""
         logs = self._read_logs()
 
         log_entry = {
@@ -50,7 +55,8 @@ class AnalysisLogger:
             "title": title,
             "description": description,
             "analysis_result": result.model_dump(),
-            "timestamp": result.timestamp
+            "timestamp": result.timestamp,
+            "metadata": metadata or {}
         }
 
         logs.append(log_entry)

@@ -68,7 +68,10 @@ async function checkHealth() {
     try {
         const response = await fetch(`${API_BASE}/health`);
         if (response.ok) {
+            const health = await response.json();
+            const mode = (health.mode || 'unknown').toUpperCase();
             elements.statusText.textContent = 'Online';
+            elements.statusText.title = `Runtime mode: ${mode}`;
             elements.statusText.previousElementSibling.style.background = '#4ade80';
         } else {
             throw new Error('Health check failed');
@@ -199,12 +202,14 @@ function addAnalysisCard(analysis) {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'analysis-card';
 
-    // Support both structured (from LLM) and legacy (from skills) formats
-    const issueType = analysis.issue_type || analysis.issue_type;
-    const priority = analysis.priority || analysis.priority;
-    const team = analysis.assigned_team || analysis.recommended_team;
-    const confidenceVal = analysis.confidence_score ? (analysis.confidence_score * 100).toFixed(0) :
-                         (analysis.confidence === 'high' ? '85' : analysis.confidence === 'medium' ? '60' : '40');
+    // Support both structured and legacy payloads
+    const issueType = analysis.issue_type || 'unknown';
+    const priority = analysis.priority || 'medium';
+    const team = analysis.assigned_team || analysis.recommended_team || 'Manual Review Queue';
+    const source = analysis.source || 'deterministic_skills';
+    const confidenceVal = analysis.confidence_score
+        ? (analysis.confidence_score * 100).toFixed(0)
+        : (analysis.confidence === 'high' ? '85' : analysis.confidence === 'medium' ? '60' : '40');
 
     const priorityClass = `priority-${priority}`;
 
@@ -225,6 +230,10 @@ function addAnalysisCard(analysis) {
             <span class="label">Confidence</span>
             <span class="value">${confidenceVal}%</span>
         </div>
+        <div class="analysis-row">
+            <span class="label">Source</span>
+            <span class="value">${source}</span>
+        </div>
         <div style="margin-top: 12px; text-align: center;">
             <button class="quick-btn" onclick="showAnalysisDetails(${JSON.stringify(analysis).replace(/"/g, '&quot;')})">
                 View Full Details
@@ -238,49 +247,61 @@ function addAnalysisCard(analysis) {
 
 // Show Analysis Details Modal
 window.showAnalysisDetails = function(analysis) {
-    const priorityClass = `priority-${analysis.priority}`;
+    const priority = analysis.priority || 'medium';
+    const issueType = analysis.issue_type || 'unknown';
+    const impactedArea = analysis.impacted_area || 'Not provided';
+    const team = analysis.assigned_team || analysis.recommended_team || 'Manual Review Queue';
+    const steps = analysis.solution_steps || analysis.troubleshooting_steps || [];
+    const reasoning = analysis.analysis || analysis.reasoning_summary || 'No reasoning provided';
+    const confScore = analysis.confidence_score
+        ? analysis.confidence_score
+        : (analysis.confidence === 'high' ? 0.85 : analysis.confidence === 'medium' ? 0.60 : 0.40);
+    const priorityClass = `priority-${priority}`;
+    const source = analysis.source || 'deterministic_skills';
+    const runtimeMode = analysis.runtime_mode || 'unknown';
+    const ticketId = analysis.ticket_id || 'n/a';
 
     elements.modalBody.innerHTML = `
         <div style="display: grid; gap: 16px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Issue Type</div>
-                    <div style="font-size: 1.1rem; font-weight: 600;">${analysis.issue_type}</div>
+                    <div style="font-size: 1.1rem; font-weight: 600;">${issueType}</div>
                 </div>
                 <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Priority</div>
-                    <div style="font-size: 1.1rem; font-weight: 600;" class="${priorityClass}">${analysis.priority.toUpperCase()}</div>
+                    <div style="font-size: 1.1rem; font-weight: 600;" class="${priorityClass}">${priority.toUpperCase()}</div>
                 </div>
             </div>
             <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
                 <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Impacted Area</div>
-                <div style="font-size: 1.1rem; font-weight: 600;">${analysis.impacted_area}</div>
+                <div style="font-size: 1.1rem; font-weight: 600;">${impactedArea}</div>
             </div>
             <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
                 <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Recommended Team</div>
-                <div style="font-size: 1.1rem; font-weight: 600;">${analysis.recommended_team}</div>
+                <div style="font-size: 1.1rem; font-weight: 600;">${team}</div>
             </div>
             <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
                 <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Confidence Score</div>
                 <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
                     <div style="flex: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
-                        <div style="width: ${analysis.confidence_score * 100}%; height: 100%; background: var(--primary-color); border-radius: 4px;"></div>
+                        <div style="width: ${confScore * 100}%; height: 100%; background: var(--primary-color); border-radius: 4px;"></div>
                     </div>
-                    <span style="font-weight: 600;">${(analysis.confidence_score * 100).toFixed(0)}%</span>
+                    <span style="font-weight: 600;">${(confScore * 100).toFixed(0)}%</span>
                 </div>
             </div>
             <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
                 <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Troubleshooting Steps</div>
                 <ol style="margin: 0; padding-left: 20px;">
-                    ${analysis.troubleshooting_steps.map(step => `<li style="margin: 6px 0; color: var(--text-primary);">${step}</li>`).join('')}
+                    ${steps.map(step => `<li style="margin: 6px 0; color: var(--text-primary);">${step}</li>`).join('')}
                 </ol>
             </div>
             <div style="padding: 12px; background: var(--primary-light); border-radius: 8px; border-left: 3px solid var(--primary-color);">
                 <div style="font-size: 0.75rem; color: var(--primary-color); text-transform: uppercase; margin-bottom: 4px;">Analysis Reasoning</div>
-                <div style="color: var(--text-primary);">${analysis.reasoning_summary}</div>
+                <div style="color: var(--text-primary);">${reasoning}</div>
             </div>
             <div style="font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 8px;">
-                Ticket ID: ${analysis.ticket_id}
+                Source: ${source} | Runtime: ${runtimeMode} | Ticket ID: ${ticketId}
             </div>
         </div>
     `;
@@ -341,13 +362,13 @@ async function clearChat() {
                     <path d="M12 1v6m0 6v6m11-7h-6m-6 0H3"/>
                 </svg>
             </div>
-            <div class="message-content">
-                <div class="message-bubble">
-                    Chat cleared! How can I help you today?
+                <div class="message-content">
+                    <div class="message-bubble">
+                    Chat cleared. Share an IT operations issue and I will triage it.
+                    </div>
+                    <div class="message-time">${formatTime(new Date())}</div>
                 </div>
-                <div class="message-time">${formatTime(new Date())}</div>
             </div>
-        </div>
     `;
 }
 

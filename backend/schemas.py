@@ -41,6 +41,7 @@ class LogEntry(BaseModel):
     description: str
     analysis_result: TicketResponse
     timestamp: str
+    metadata: Optional[dict] = None
 
 
 class HealthResponse(BaseModel):
@@ -48,3 +49,5 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     timestamp: str
+    mode: Optional[str] = None
+    model: Optional[str] = None

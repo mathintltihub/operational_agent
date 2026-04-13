@@ -1369,5 +1369,428 @@
       "timestamp": "2026-04-13T13:13:03.545811"
     },
     "timestamp": "2026-04-13T13:13:03.545811"
+  },
+  {
+    "ticket_id": "ticket-ad200f6d",
+    "title": "Production API returning 503 for all users after r",
+    "description": "Production API returning 503 for all users after release",
+    "analysis_result": {
+      "ticket_id": "ticket-ad200f6d",
+      "issue_type": "server",
+      "priority": "critical",
+      "impacted_area": "Production API Accessibility",
+      "recommended_team": "API and Application Support Team",
+      "troubleshooting_steps": [
+        "Immediately notify affected teams and stakeholders about potential downtime using predefined communication channels",
+        "Initiate rollback procedures to revert changes made in the last release"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The recent release may have introduced a service disruption causing the '503 Service Unavailable' error for all users.",
+      "timestamp": "2026-04-13T13:39:30.895734"
+    },
+    "timestamp": "2026-04-13T13:39:30.895734"
+  },
+  {
+    "ticket_id": "ticket-25c2fbdc",
+    "title": "Database connection timeout",
+    "description": "Database connection timeout",
+    "analysis_result": {
+      "ticket_id": "ticket-25c2fbdc",
+      "issue_type": "database",
+      "priority": "critical",
+      "impacted_area": "Data Access and Storage",
+      "recommended_team": "Database Operations Team",
+      "troubleshooting_steps": [
+        "Verify current load on the database servers",
+        "Check for recent changes in firewall rules affecting outbound connections",
+        "Review and optimize query execution plans"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The user is experiencing a timeout when attempting to connect to the database, which indicates potential issues with network latency or server performance.",
+      "timestamp": "2026-04-13T13:40:17.624679"
+    },
+    "timestamp": "2026-04-13T13:40:17.624679"
+  },
+  {
+    "ticket_id": "ticket-8449ebff",
+    "title": "high priority server incident after restart impact",
+    "description": "high priority server incident after restart impacting all users",
+    "analysis_result": {
+      "ticket_id": "ticket-8449ebff",
+      "issue_type": "server",
+      "priority": "critical",
+      "impacted_area": "all users",
+      "recommended_team": "Server Operations Team",
+      "troubleshooting_steps": [
+        "Immediately isolate the affected servers from the network to prevent further impacts.",
+        "Initiate an emergency rollback of recent changes if applicable."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The server restart has caused a critical service disruption affecting all connected clients.",
+      "timestamp": "2026-04-13T13:43:30.522857"
+    },
+    "timestamp": "2026-04-13T13:43:30.522857",
+    "metadata": {
+      "endpoint": "/chat",
+      "mode": "llm",
+      "inference_source": "ollama_ticket",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "medium",
+        "classification_signals": [
+          "server"
+        ],
+        "priority_signals": [
+          "all users"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-8eebacf0",
+    "title": "Cannot connect to production database",
+    "description": "Our application shows timeout errors when connecting to PostgreSQL. Started 2 hours ago.",
+    "analysis_result": {
+      "ticket_id": "ticket-8eebacf0",
+      "issue_type": "database",
+      "priority": "high",
+      "impacted_area": "application-backend connection to database",
+      "recommended_team": "Database Operations Team",
+      "troubleshooting_steps": [
+        "Verify that the PostgreSQL service is running on the host machine.",
+        "Check for any recent changes in firewall rules, VPN configurations, or DNS settings that could affect database accessibility.",
+        "Review current connection strings and credentials used by our application to connect to the production database."
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "The timeout errors suggest a potential issue with the PostgreSQL server or network connectivity between our application and the production environment.",
+      "timestamp": "2026-04-13T13:44:13.608681"
+    },
+    "timestamp": "2026-04-13T13:44:13.608681",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "high",
+        "classification_signals": [
+          "database",
+          "postgres",
+          "sql",
+          "timeout"
+        ],
+        "priority_signals": [
+          "timeout"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-366e513a",
+    "title": "VPN users cannot access internal portal",
+    "description": "Remote employees report they cannot connect to the company portal through VPN.",
+    "analysis_result": {
+      "ticket_id": "ticket-366e513a",
+      "issue_type": "network",
+      "priority": "high",
+      "impacted_area": "remote access to company resources",
+      "recommended_team": "Network Operations Team",
+      "troubleshooting_steps": [
+        "Verify that the VPN server is operational and not experiencing high traffic load.",
+        "Check if there are any recent changes made in firewalls rules affecting outbound connections from remote users."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The inability of VPN users to connect suggests a network issue, possibly related to the VPN service or firewall configuration.",
+      "timestamp": "2026-04-13T13:44:23.292308"
+    },
+    "timestamp": "2026-04-13T13:44:23.292308",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "medium",
+        "classification_signals": [
+          "vpn",
+          "port"
+        ],
+        "priority_signals": [
+          "cannot access"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-bbe0965f",
+    "title": "Need access to production server",
+    "description": "I need sudo access to investigate issues. I have manager approval.",
+    "analysis_result": {
+      "ticket_id": "ticket-bbe0965f",
+      "issue_type": "access/request",
+      "priority": "low",
+      "impacted_area": "Production Server",
+      "recommended_team": "Security and Access Control Team",
+      "troubleshooting_steps": [
+        "Verify manager's approval documentation is complete and accessible by the IT team."
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "Request for elevated privileges to investigate server issues.",
+      "timestamp": "2026-04-13T13:44:29.125947"
+    },
+    "timestamp": "2026-04-13T13:44:29.125947",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "medium",
+        "classification_signals": [
+          "access",
+          "sudo"
+        ],
+        "priority_signals": [],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-85a0b664",
+    "title": "Production application returning HTTP 500 for all ",
+    "description": "Production application returning HTTP 500 for all users",
+    "analysis_result": {
+      "ticket_id": "ticket-85a0b664",
+      "issue_type": "application",
+      "priority": "critical",
+      "impacted_area": "All users within the production environment.",
+      "recommended_team": "Production Support Team",
+      "troubleshooting_steps": [
+        "Check service health checks and error-rate dashboards.",
+        "Review application logs for stack traces and dependency failures.",
+        "Correlate with recent deploys, config changes, or feature flags.",
+        "Escalate with request IDs, error signatures, and user impact details."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The HTTP 500 error indicates a server-side issue that is affecting all endpoints of our application. This could be due to various reasons such as misconfigurenerrors, code bugs or resource limitations on the servers hosting the application.",
+      "timestamp": "2026-04-13T13:44:34.193443"
+    },
+    "timestamp": "2026-04-13T13:44:34.193443",
+    "metadata": {
+      "endpoint": "/chat",
+      "mode": "llm",
+      "inference_source": "ollama_ticket",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "high",
+        "classification_signals": [
+          "application",
+          "app",
+          "http 500",
+          "500"
+        ],
+        "priority_signals": [
+          "all users"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-ff22878b",
+    "title": "Cannot connect to production database",
+    "description": "Our application shows timeout errors when connecting to PostgreSQL. Started 2 hours ago.",
+    "analysis_result": {
+      "ticket_id": "ticket-ff22878b",
+      "issue_type": "database",
+      "priority": "high",
+      "impacted_area": "production environment",
+      "recommended_team": "Database Operations Team",
+      "troubleshooting_steps": [
+        "Verify the health and resource usage of the PostgreSQL service on the production host using system monitoring tools.",
+        "Check for any recent changes in configuration that might have affected connectivity, such as firewall rules or VPN settings."
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "The timeout errors suggest a potential network issue or database server performance problem.",
+      "timestamp": "2026-04-13T13:45:34.952795"
+    },
+    "timestamp": "2026-04-13T13:45:34.952795",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "high",
+        "classification_signals": [
+          "database",
+          "postgres",
+          "sql",
+          "timeout"
+        ],
+        "priority_signals": [
+          "timeout"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-74708446",
+    "title": "VPN users cannot access internal portal",
+    "description": "Remote employees report they cannot connect to the company portal through VPN.",
+    "analysis_result": {
+      "ticket_id": "ticket-74708446",
+      "issue_type": "network",
+      "priority": "high",
+      "impacted_area": "Remote Access to Internal Systems",
+      "recommended_team": "Network Operations Team",
+      "troubleshooting_steps": [
+        "Verify that the VPN service is running on the server side and check for any reported outages.",
+        "Confirm if there are recent changes in firewall configurations affecting VPN traffic."
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The inability of VPN users to connect suggests a network issue, potentially with the VPN service or firewall rules.",
+      "timestamp": "2026-04-13T13:45:42.845249"
+    },
+    "timestamp": "2026-04-13T13:45:42.845249",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "medium",
+        "classification_signals": [
+          "vpn",
+          "port"
+        ],
+        "priority_signals": [
+          "cannot access"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-9e1b123f",
+    "title": "Need access to production server",
+    "description": "I need sudo access to investigate issues. I have manager approval.",
+    "analysis_result": {
+      "ticket_id": "ticket-9e1b123f",
+      "issue_type": "access/request",
+      "priority": "low",
+      "impacted_area": "Production Server Environment",
+      "recommended_team": "Security and Access Control Team",
+      "troubleshooting_steps": [
+        "Verify manager's identity and authorization level",
+        "Grant temporary sudo access with logging enabled"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "The ticket indicates a request for elevated privileges to troubleshoot issues. Manager approval is noted.",
+      "timestamp": "2026-04-13T13:45:52.080463"
+    },
+    "timestamp": "2026-04-13T13:45:52.080463",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "medium",
+        "classification_signals": [
+          "access",
+          "sudo"
+        ],
+        "priority_signals": [],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-215a3204",
+    "title": "What is the meaning of my name?",
+    "description": "What is the meaning of my name?",
+    "analysis_result": {
+      "ticket_id": "ticket-215a3204",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unclear impact, needs clarification",
+      "recommended_team": "Manual Review Queue",
+      "troubleshooting_steps": [
+        "Collect error message, timeline, and affected systems before routing.",
+        "Ask for impact scope: number of users, environments, and services.",
+        "Request logs or screenshots to reduce ambiguity.",
+        "Route to Manual Review if classification remains unclear."
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "Classified as unknown with medium priority from signals: general incident indicators. Confidence is 35%.",
+      "timestamp": "2026-04-13T13:46:04.711969"
+    },
+    "timestamp": "2026-04-13T13:46:04.711969",
+    "metadata": {
+      "endpoint": "/chat",
+      "mode": "mock",
+      "inference_source": "deterministic_skills",
+      "llm_used": false,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "low",
+        "classification_signals": [],
+        "priority_signals": [],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
+  },
+  {
+    "ticket_id": "ticket-609447d8",
+    "title": "Cannot connect to production database",
+    "description": "Our application shows timeout errors when connecting to PostgreSQL. Started 2 hours ago.",
+    "analysis_result": {
+      "ticket_id": "ticket-609447d8",
+      "issue_type": "database",
+      "priority": "high",
+      "impacted_area": "production environment",
+      "recommended_team": "Database Operations Team",
+      "troubleshooting_steps": [
+        "Verify PostgreSQL service status on production servers",
+        "Check for recent changes in firewall rules that might affect connectivity"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "The timeout errors suggest a potential issue with the database connection, which could be due to network problems or server overload.",
+      "timestamp": "2026-04-13T13:46:29.586599"
+    },
+    "timestamp": "2026-04-13T13:46:29.586599",
+    "metadata": {
+      "endpoint": "/analyze-ticket",
+      "mode": "llm",
+      "inference_source": "ollama_refined",
+      "llm_used": true,
+      "audit": {
+        "inference_source": "deterministic_skills",
+        "confidence_level": "high",
+        "classification_signals": [
+          "database",
+          "postgres",
+          "sql",
+          "timeout"
+        ],
+        "priority_signals": [
+          "timeout"
+        ],
+        "safety_notice": "Use change-control and verification steps before making production-impacting changes."
+      }
+    }
   }
 ]

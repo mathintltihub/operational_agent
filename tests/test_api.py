@@ -19,6 +19,8 @@ def test_health():
         data = response.json()
         print(f"  Status: {data['status']}")
         print(f"  Version: {data['version']}")
+        if 'mode' in data:
+            print(f"  Mode: {data['mode']}")
         print("  PASSED")
         return True
     except Exception as e:
@@ -105,6 +107,55 @@ def test_logs():
         return False
 
 
+def test_chat_ticket():
+    """Test chat endpoint for in-scope ticket triage."""
+    print("\n[TEST] Chat Ticket Triage")
+    try:
+        response = requests.post(f'{BASE}/chat', json={
+            "message": "Production application returning HTTP 500 for all users"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert 'message' in data
+        assert data.get('analysis') is not None or data.get('structured', {}).get('mode') == 'conversation'
+        print(f"  Conversation ID: {data['conversation_id']}")
+        print(f"  Source: {data.get('structured', {}).get('source', 'n/a')}")
+        print(f"  Runtime mode: {data.get('structured', {}).get('runtime_mode', 'n/a')}")
+        print("  PASSED")
+        return True
+    except Exception as e:
+        try:
+            print(f"  Response: {response.status_code} {response.text}")
+        except Exception:
+            pass
+        print(f"  FAILED: {e}")
+        return False
+
+
+def test_chat_out_of_scope():
+    """Test chat endpoint for out-of-scope handling."""
+    print("\n[TEST] Chat Out-of-Scope Guardrail")
+    try:
+        response = requests.post(f'{BASE}/chat', json={
+            "message": "What is the meaning of my name?"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get('analysis') is None
+        content = data['message']['content'].lower()
+        assert "operations" in content or "incident" in content
+        print("  Out-of-scope guardrail triggered")
+        print("  PASSED")
+        return True
+    except Exception as e:
+        try:
+            print(f"  Response: {response.status_code} {response.text}")
+        except Exception:
+            pass
+        print(f"  FAILED: {e}")
+        return False
+
+
 def main():
     """Run all tests."""
     print("="*60)
@@ -125,6 +176,8 @@ def main():
     results.append(test_sample_tickets())
     results.append(test_analyze_ticket())
     results.append(test_logs())
+    results.append(test_chat_ticket())
+    results.append(test_chat_out_of_scope())
 
     # Summary
     print("\n" + "="*60)
