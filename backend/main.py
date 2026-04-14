@@ -130,6 +130,18 @@ Respond with ONLY valid JSON in this exact structure:
 Important: Be concise, accurate, and do NOT hallucinate. If unclear, use "unknown" issue_type and route to Manual Review."""
 
 
+def _is_non_empty_text(value) -> bool:
+    """Return True when value is a non-empty string."""
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _is_non_empty_steps(value) -> bool:
+    """Return True when value is a list with at least one non-empty step."""
+    if not isinstance(value, list):
+        return False
+    return any(_is_non_empty_text(step) for step in value)
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
@@ -183,15 +195,19 @@ async def analyze_ticket(request: TicketRequest):
                     llm_result = json.loads(json_match.group())
                     # Use LLM results if available, but keep skills as fallback
                     if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
-                        result["issue_type"] = llm_result.get("issue_type", result["issue_type"])
-                        result["priority"] = llm_result.get("priority", result["priority"])
-                        result["assigned_team"] = llm_result.get("assigned_team", result["assigned_team"])
-                        result["impacted_area"] = llm_result.get("impacted_area", result["impacted_area"])
-                        if llm_result.get("solution_steps"):
-                            result["solution_steps"] = llm_result.get("solution_steps")
-                        if llm_result.get("analysis"):
-                            result["analysis"] = llm_result.get("analysis")
-                        confidence_val = llm_result.get("confidence", "medium")
+                        if _is_non_empty_text(llm_result.get("issue_type")):
+                            result["issue_type"] = llm_result["issue_type"]
+                        if _is_non_empty_text(llm_result.get("priority")):
+                            result["priority"] = llm_result["priority"]
+                        if _is_non_empty_text(llm_result.get("assigned_team")):
+                            result["assigned_team"] = llm_result["assigned_team"]
+                        if _is_non_empty_text(llm_result.get("impacted_area")):
+                            result["impacted_area"] = llm_result["impacted_area"]
+                        if _is_non_empty_steps(llm_result.get("solution_steps")):
+                            result["solution_steps"] = [step for step in llm_result["solution_steps"] if _is_non_empty_text(step)]
+                        if _is_non_empty_text(llm_result.get("analysis")):
+                            result["analysis"] = llm_result["analysis"]
+                        confidence_val = llm_result.get("confidence", "medium") if _is_non_empty_text(llm_result.get("confidence")) else "medium"
                         result["confidence"] = confidence_val
                         result["confidence_score"] = 0.85 if confidence_val == "high" else 0.6 if confidence_val == "medium" else 0.4
             except Exception as e:
@@ -336,17 +352,21 @@ async def chat(request: ChatRequest):
         # Merge results - use LLM if available, otherwise use skills
         if llm_result:
             if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
-                skill_result["issue_type"] = llm_result.get("issue_type", skill_result["issue_type"])
-                skill_result["priority"] = llm_result.get("priority", skill_result["priority"])
-                skill_result["assigned_team"] = llm_result.get("assigned_team", skill_result["assigned_team"])
-                skill_result["impacted_area"] = llm_result.get("impacted_area", skill_result["impacted_area"])
-                if llm_result.get("solution_steps"):
-                    skill_result["solution_steps"] = llm_result.get("solution_steps")
-                if llm_result.get("analysis"):
-                    skill_result["analysis"] = llm_result.get("analysis")
+                if _is_non_empty_text(llm_result.get("issue_type")):
+                    skill_result["issue_type"] = llm_result["issue_type"]
+                if _is_non_empty_text(llm_result.get("priority")):
+                    skill_result["priority"] = llm_result["priority"]
+                if _is_non_empty_text(llm_result.get("assigned_team")):
+                    skill_result["assigned_team"] = llm_result["assigned_team"]
+                if _is_non_empty_text(llm_result.get("impacted_area")):
+                    skill_result["impacted_area"] = llm_result["impacted_area"]
+                if _is_non_empty_steps(llm_result.get("solution_steps")):
+                    skill_result["solution_steps"] = [step for step in llm_result["solution_steps"] if _is_non_empty_text(step)]
+                if _is_non_empty_text(llm_result.get("analysis")):
+                    skill_result["analysis"] = llm_result["analysis"]
 
                 # Convert confidence string to score
-                conf_level = llm_result.get("confidence", "medium")
+                conf_level = llm_result.get("confidence", "medium") if _is_non_empty_text(llm_result.get("confidence")) else "medium"
                 skill_result["confidence"] = conf_level
                 skill_result["confidence_score"] = 0.85 if conf_level == "high" else 0.6 if conf_level == "medium" else 0.4
 
@@ -397,7 +417,10 @@ async def chat(request: ChatRequest):
         logger.error(f"Chat error: {e}")
         error_message = ChatMessage(
             role="assistant",
-            content=f"I encountered an error analyzing your ticket: {str(e)}. Please try again."
+            content=(
+                "I could not complete the triage in the standard format this time. "
+                "Please share a bit more detail (system, exact error, and impact), and I will retry."
+            )
         )
         conversations[conversation_id].append(error_message.model_dump())
 

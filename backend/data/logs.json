@@ -1865,5 +1865,71 @@
         "safety_notice": "Use change-control and verification steps before making production-impacting changes."
       }
     }
+  },
+  {
+    "ticket_id": "ticket-6d81482a",
+    "title": "database issue",
+    "description": "database issue",
+    "analysis_result": {
+      "ticket_id": "ticket-6d81482a",
+      "issue_type": "database",
+      "priority": "critical",
+      "impacted_area": "Production",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server status and availability",
+        "Verify network connectivity to database host",
+        "Review database connection pool settings",
+        "Check database logs for errors or warnings",
+        "Verify database credentials and permissions"
+      ],
+      "confidence_score": 0.4,
+      "reasoning_summary": "Unknown analysis details available",
+      "timestamp": "2026-04-14T16:20:54.322877"
+    },
+    "timestamp": "2026-04-14T16:20:54.322877"
+  },
+  {
+    "ticket_id": "ticket-df9380ea",
+    "title": "database issue",
+    "description": "database issue",
+    "analysis_result": {
+      "ticket_id": "ticket-df9380ea",
+      "issue_type": "database",
+      "priority": "critical",
+      "impacted_area": "Production",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server status and availability",
+        "Verify network connectivity to database host",
+        "Review database connection pool settings",
+        "Check database logs for errors or warnings",
+        "Verify database credentials and permissions"
+      ],
+      "confidence_score": 0.4,
+      "reasoning_summary": "Unknown analysis details provided, please provide more context.",
+      "timestamp": "2026-04-14T16:21:08.520055"
+    },
+    "timestamp": "2026-04-14T16:21:08.520055"
+  },
+  {
+    "ticket_id": "ticket-5f69fad0",
+    "title": "internet connective issue in the database.",
+    "description": "internet connective issue in the database.",
+    "analysis_result": {
+      "ticket_id": "ticket-5f69fad0",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Database Connectivity",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database logs for errors",
+        "Verify network connectivity to the database server"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "Internet connectivity issue in the database may be related to a network problem or a database configuration issue.",
+      "timestamp": "2026-04-14T16:24:58.332539"
+    },
+    "timestamp": "2026-04-14T16:24:58.332539"
   }
 ]
