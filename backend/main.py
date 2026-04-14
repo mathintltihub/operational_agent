@@ -6,7 +6,6 @@ import os
 import sys
 import uuid
 import logging
-import re
 from pathlib import Path
 from datetime import datetime
 from typing import List, Optional
@@ -32,16 +31,22 @@ from backend.schemas import (
     SampleTicket,
     HealthResponse
 )
-from backend.services.ollama_client import query_ollama, check_ollama_health, OLLAMA_MODEL
+from backend.services.ollama_client import (
+    query_ollama,
+    check_ollama_health,
+    get_ollama_runtime_status,
+    get_active_model,
+)
 from backend.services.agent_skills import (
+    classify_issue,
+    detect_priority,
+    route_to_team,
+    suggest_solution,
+    calculate_confidence,
+    get_impacted_area,
+    confidence_to_level,
     execute_skills
 )
-from backend.services.chat_policy import (
-    CHAT_SYSTEM_PROMPT,
-    is_operations_related_message,
-    build_out_of_scope_reply,
-)
-from backend.services.response_quality import merge_llm_ticket_into_result
 from backend.services.logger import logger as analysis_logger
 from backend.services.sample_data import SAMPLE_TICKETS
 from backend.services.identity_skill import is_identity_question, get_skill_response
@@ -89,16 +94,6 @@ app.add_middleware(
 # In-memory conversation store (for demo purposes)
 conversations = {}
 
-# Runtime mode controls
-FORCE_MOCK_MODE = os.getenv("FORCE_MOCK_MODE", "false").lower() in {"1", "true", "yes"}
-
-
-def get_runtime_mode() -> str:
-    """Runtime mode summary: llm, mock, or forced-mock."""
-    if FORCE_MOCK_MODE:
-        return "forced-mock"
-    return "llm" if check_ollama_health() else "mock"
-
 # System prompt for LLaMA
 SYSTEM_PROMPT = """You are an IT Operations Triage Assistant. Your role is to analyze support tickets and classify them accurately.
 
@@ -135,33 +130,23 @@ Respond with ONLY valid JSON in this exact structure:
 Important: Be concise, accurate, and do NOT hallucinate. If unclear, use "unknown" issue_type and route to Manual Review."""
 
 
-
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
-    mode = get_runtime_mode()
-    is_healthy = check_ollama_health()
+    # Check Ollama status
+    ollama_status = "connected" if check_ollama_health() else "disconnected"
 
     return HealthResponse(
-        status="healthy" if (mode == "llm" or mode.endswith("mock")) else "degraded",
+        status="healthy" if check_ollama_health() else "degraded",
         version="2.0.0",
-        timestamp=datetime.utcnow().isoformat(),
-        mode=mode,
-        model=OLLAMA_MODEL if is_healthy else None,
+        timestamp=datetime.utcnow().isoformat()
     )
 
 
 @app.get("/ollama-status")
 async def get_ollama_status():
     """Check Ollama service status."""
-    is_healthy = check_ollama_health()
-    return {
-        "status": "connected" if is_healthy else "disconnected",
-        "model": OLLAMA_MODEL,
-        "endpoint": "http://localhost:11434",
-        "mode": get_runtime_mode(),
-        "force_mock_mode": FORCE_MOCK_MODE,
-    }
+    return get_ollama_runtime_status()
 
 
 @app.post("/analyze-ticket", response_model=TicketResponse)
@@ -180,25 +165,35 @@ async def analyze_ticket(request: TicketRequest):
         # Combine title and description for analysis
         full_description = f"Title: {request.title}\nDescription: {request.description}"
 
-        # Execute skills baseline result
+        # Execute skills to get analysis
         result = execute_skills(full_description)
-        inference_source = "deterministic_skills"
-        llm_used = False
 
-        # Refine with LLM when available and mock mode is not forced
-        if not FORCE_MOCK_MODE and check_ollama_health():
+        # Also try LLM if available
+        llm_result = None
+        if check_ollama_health():
             try:
                 prompt = f"{SYSTEM_PROMPT}\n\nTitle: {request.title}\nDescription: {request.description}\n\nRespond with ONLY valid JSON."
                 llm_response = query_ollama(prompt)
 
                 # Try to parse LLM response
                 import json
-                json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
+                import re
+                json_match = re.search(r'\{[^{}]*\}', llm_response, re.DOTALL)
                 if json_match:
                     llm_result = json.loads(json_match.group())
-                    result = merge_llm_ticket_into_result(llm_result, result)
-                    inference_source = "ollama_refined"
-                    llm_used = True
+                    # Use LLM results if available, but keep skills as fallback
+                    if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
+                        result["issue_type"] = llm_result.get("issue_type", result["issue_type"])
+                        result["priority"] = llm_result.get("priority", result["priority"])
+                        result["assigned_team"] = llm_result.get("assigned_team", result["assigned_team"])
+                        result["impacted_area"] = llm_result.get("impacted_area", result["impacted_area"])
+                        if llm_result.get("solution_steps"):
+                            result["solution_steps"] = llm_result.get("solution_steps")
+                        if llm_result.get("analysis"):
+                            result["analysis"] = llm_result.get("analysis")
+                        confidence_val = llm_result.get("confidence", "medium")
+                        result["confidence"] = confidence_val
+                        result["confidence_score"] = 0.85 if confidence_val == "high" else 0.6 if confidence_val == "medium" else 0.4
             except Exception as e:
                 logger.warning(f"LLM analysis failed, using skill-based result: {e}")
 
@@ -219,14 +214,7 @@ async def analyze_ticket(request: TicketRequest):
         analysis_logger.log_analysis(
             title=request.title,
             description=request.description,
-            result=response,
-            metadata={
-                "endpoint": "/analyze-ticket",
-                "mode": get_runtime_mode(),
-                "inference_source": inference_source,
-                "llm_used": llm_used,
-                "audit": result.get("audit", {}),
-            },
+            result=response
         )
 
         return response
@@ -287,6 +275,7 @@ async def chat(request: ChatRequest):
     Uses Ollama (llama3) for intelligent analysis with skill-based fallback.
     Maintains conversation history and provides chatbot-style responses.
     """
+    import re
     import json
 
     # Generate or retrieve conversation ID
@@ -304,102 +293,62 @@ async def chat(request: ChatRequest):
     if len(conversations[conversation_id]) > 6:  # 3 user + 3 assistant
         conversations[conversation_id] = conversations[conversation_id][-6:]
 
-    try:
-        # Always prepare local skill analysis as fallback for ticket-like requests.
-        skill_result = execute_skills(request.message)
-        llm_available = (not FORCE_MOCK_MODE) and check_ollama_health()
-        inference_source = "deterministic_skills"
+    # --- Identity skill: handle greetings / who-are-you locally ---
+    if is_identity_question(request.message):
+        assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
+        conversations[conversation_id].append(assistant_message.model_dump())
+        return ChatResponse(
+            conversation_id=conversation_id,
+            message=assistant_message,
+            analysis=None
+        )
 
-        # Let the local Ollama model handle every message first.
+    # --- Ticket analysis skill: for IT issues ---
+    try:
+        # First, use skill-based analysis as fallback
+        skill_result = execute_skills(request.message)
+        confidence = skill_result["confidence"]
+        confidence_score = skill_result["confidence_score"]
+
+        # Try LLM if available and requested
         llm_result = None
-        llm_text_response = None
-        if request.use_llm and llm_available:
+        if request.use_llm and check_ollama_health():
             try:
+                # Build context from recent conversation
                 context = ""
                 if len(conversations[conversation_id]) > 1:
                     context = "Recent conversation:\n"
                     for msg in conversations[conversation_id][-4:]:
                         context += f"{msg['role']}: {msg['content'][:200]}\n"
 
-                prompt = (
-                    f"{CHAT_SYSTEM_PROMPT}\n\n"
-                    f"{context}\n\n"
-                    f"User message: {request.message}\n"
-                )
+                prompt = f"{SYSTEM_PROMPT}\n\n{context}\n\nUser issue: {request.message}\n\nRespond with ONLY valid JSON."
 
-                llm_response = query_ollama(prompt, timeout=60, response_format="json")
+                llm_response = query_ollama(prompt, timeout=60)
 
-                json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
+                # Parse LLM response
+                json_match = re.search(r'\{[^{}]*\}', llm_response, re.DOTALL)
                 if json_match:
-                    llm_payload = json.loads(json_match.group())
-                    logger.info(f"LLM parsed result: {llm_payload}")
-
-                    if llm_payload.get("mode") == "conversation":
-                        llm_text_response = llm_payload.get("reply", "").strip()
-                        inference_source = "ollama_conversation"
-                    elif llm_payload.get("mode") == "ticket":
-                        llm_result = llm_payload
-                        inference_source = "ollama_ticket"
-                    elif llm_payload.get("mode") == "out_of_scope":
-                        llm_result = llm_payload
-                        inference_source = "ollama_out_of_scope"
-                    else:
-                        llm_text_response = llm_response.strip()
-                else:
-                    llm_text_response = llm_response.strip()
+                    llm_result = json.loads(json_match.group())
+                    logger.info(f"LLM parsed result: {llm_result}")
             except Exception as e:
                 logger.warning(f"LLM analysis failed: {e}. Using skill-based result.")
 
-        # Enforce domain restriction even if the model drifts out of scope.
-        if llm_result is None and llm_text_response and not is_operations_related_message(request.message):
-            llm_text_response = build_out_of_scope_reply()
-
-        if llm_result and llm_result.get("mode") == "out_of_scope":
-            assistant_message = ChatMessage(role="assistant", content=build_out_of_scope_reply())
-            conversations[conversation_id].append(assistant_message.model_dump())
-            return ChatResponse(
-                conversation_id=conversation_id,
-                message=assistant_message,
-                analysis=None,
-                structured={
-                    "mode": "out_of_scope",
-                    "source": inference_source,
-                    "runtime_mode": get_runtime_mode(),
-                }
-            )
-
-        # Use plain-text LLM output for allowed operations conversation.
-        if llm_text_response:
-            assistant_message = ChatMessage(role="assistant", content=llm_text_response)
-            conversations[conversation_id].append(assistant_message.model_dump())
-            return ChatResponse(
-                conversation_id=conversation_id,
-                message=assistant_message,
-                analysis=None,
-                structured={
-                    "mode": "conversation",
-                    "source": inference_source,
-                    "runtime_mode": get_runtime_mode(),
-                }
-            )
-
-        # Merge structured ticket analysis - use LLM JSON if available, otherwise use skills.
+        # Merge results - use LLM if available, otherwise use skills
         if llm_result:
-            skill_result = merge_llm_ticket_into_result(llm_result, skill_result)
-        elif request.use_llm and not llm_available and is_identity_question(request.message):
-            # Keep a local fallback only when Ollama is unavailable.
-            assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
-            conversations[conversation_id].append(assistant_message.model_dump())
-            return ChatResponse(
-                conversation_id=conversation_id,
-                message=assistant_message,
-                analysis=None,
-                structured={
-                    "mode": "conversation",
-                    "source": "identity_fallback",
-                    "runtime_mode": get_runtime_mode(),
-                }
-            )
+            if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
+                skill_result["issue_type"] = llm_result.get("issue_type", skill_result["issue_type"])
+                skill_result["priority"] = llm_result.get("priority", skill_result["priority"])
+                skill_result["assigned_team"] = llm_result.get("assigned_team", skill_result["assigned_team"])
+                skill_result["impacted_area"] = llm_result.get("impacted_area", skill_result["impacted_area"])
+                if llm_result.get("solution_steps"):
+                    skill_result["solution_steps"] = llm_result.get("solution_steps")
+                if llm_result.get("analysis"):
+                    skill_result["analysis"] = llm_result.get("analysis")
+
+                # Convert confidence string to score
+                conf_level = llm_result.get("confidence", "medium")
+                skill_result["confidence"] = conf_level
+                skill_result["confidence_score"] = 0.85 if conf_level == "high" else 0.6 if conf_level == "medium" else 0.4
 
         # Build TicketResponse
         analysis = TicketResponse(
@@ -424,14 +373,7 @@ async def chat(request: ChatRequest):
         analysis_logger.log_analysis(
             title=request.message[:50],
             description=request.message,
-            result=analysis,
-            metadata={
-                "endpoint": "/chat",
-                "mode": get_runtime_mode(),
-                "inference_source": inference_source,
-                "llm_used": inference_source.startswith("ollama"),
-                "audit": skill_result.get("audit", {}),
-            },
+            result=analysis
         )
 
         # Build structured response
@@ -439,13 +381,9 @@ async def chat(request: ChatRequest):
             "issue_type": skill_result["issue_type"],
             "priority": skill_result["priority"],
             "assigned_team": skill_result["assigned_team"],
-            "impacted_area": skill_result["impacted_area"],
             "analysis": skill_result["analysis"],
             "solution_steps": skill_result["solution_steps"],
-            "confidence": skill_result["confidence"],
-            "source": inference_source,
-            "runtime_mode": get_runtime_mode(),
-            "audit": skill_result.get("audit", {}),
+            "confidence": skill_result["confidence"]
         }
 
         return ChatResponse(
@@ -493,41 +431,44 @@ async def delete_conversation(conversation_id: str):
 
 
 def generate_chatbot_response(analysis: TicketResponse) -> str:
-    """Generate a natural operations-agent response from analysis results."""
+    """Generate a natural, chatbot-style response from analysis results."""
 
-    issue_label = analysis.issue_type.replace("/", " or ")
-    confidence_pct = int(round(analysis.confidence_score * 100))
+    priority_emoji = {
+        "critical": "🔴",
+        "high": "🟠",
+        "medium": "🟡",
+        "low": "🟢"
+    }
 
-    intro = (
-        f"I reviewed this as a {issue_label} issue with {analysis.priority} priority. "
-        f"I recommend routing it to {analysis.recommended_team}, and the likely impact area is {analysis.impacted_area}."
-    )
+    issue_emoji = {
+        "server": "🖥️",
+        "network": "🌐",
+        "database": "🗄️",
+        "application": "📱",
+        "access/request": "🔐",
+        "unknown": "❓"
+    }
 
-    confidence_line = (
-        f"My confidence is around {confidence_pct}% based on the details provided."
-    )
+    priority = analysis.priority
+    issue_type = analysis.issue_type
 
-    reasoning_line = (
-        f"Reasoning: {analysis.reasoning_summary}"
-    )
+    response = f"""🔍 **Analysis Complete**
 
-    steps_header = "Start with these troubleshooting actions:"
-    steps_body = "\n".join(
-        f"{idx}. {step}" for idx, step in enumerate(analysis.troubleshooting_steps, 1)
-    )
+{issue_emoji.get(issue_type, '📋')} *Issue Type:* {issue_type.title()}
+{priority_emoji.get(priority, '⚪')} *Priority:* {priority.upper()}
+👥 *Recommended Team:* {analysis.recommended_team}
+📍 *Impacted Area:* {analysis.impacted_area}
+📊 *Confidence:* {analysis.confidence_score * 100:.0f}%
 
-    follow_up = (
-        "If you can share logs, error codes, or user impact details, I can refine this triage further."
-    )
+**Troubleshooting Steps:**
+"""
 
-    return (
-        f"{intro}\n\n"
-        f"{confidence_line}\n"
-        f"{reasoning_line}\n\n"
-        f"{steps_header}\n"
-        f"{steps_body}\n\n"
-        f"{follow_up}"
-    )
+    for i, step in enumerate(analysis.troubleshooting_steps, 1):
+        response += f"\n{i}. {step}"
+
+    response += f"\n\n💡 *Reasoning:* {analysis.reasoning_summary}"
+
+    return response
 
 
 if __name__ == "__main__":
@@ -537,16 +478,21 @@ if __name__ == "__main__":
 
     # Ollama mode
     print("\n" + "="*60)
-    print("Operations Agent v2.0 - IT Operations Triage Copilot")
+    active_model = get_active_model()
+    print(f"Operations Agent v2.0 - Running with Ollama ({active_model})")
     print("="*60 + "\n")
 
     # Check Ollama status
-    if FORCE_MOCK_MODE:
-        print("! FORCE_MOCK_MODE enabled - using deterministic fallback")
-    elif check_ollama_health():
-        print(f"✓ Ollama connected - model: {OLLAMA_MODEL}")
+    ollama_status = get_ollama_runtime_status()
+    if ollama_status["status"] == "connected":
+        if ollama_status["model_available"]:
+            print(f"[OK] Ollama connected - model ready: {active_model}")
+        else:
+            print(f"[WARN] Ollama connected, but model '{active_model}' is not installed")
+            if ollama_status["available_models"]:
+                print(f"  Available: {', '.join(ollama_status['available_models'])}")
     else:
-        print("⚠ Ollama not detected - using deterministic fallback")
+        print("[WARN] Ollama not detected - using skill-based fallback")
         print("  Make sure Ollama is running: ollama serve")
 
     local_url = "http://127.0.0.1:8000"

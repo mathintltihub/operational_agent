@@ -1,233 +1,209 @@
 # Operations Agent
 
-Operations Agent is a local-first IT operations triage assistant with a FastAPI backend and chat UI.
+IT Operations Ticket Triage System - Local MVP
 
-It is designed to stay in IT operations scope only:
-- classify incidents and support issues
-- detect priority
-- route to the right team
-- suggest troubleshooting steps
-- provide natural-language triage guidance
+## Overview
 
-## Current Behavior
+Operations Agent is a local-first MVP for an AI-based IT Operations platform. It automates ticket triage, issue classification, priority detection, team assignment, and troubleshooting suggestions for IT support teams.
 
-The backend uses a hybrid approach:
+## Features
 
-- Ollama-first reasoning for chat (`/chat`)
-- deterministic skill-based fallback for stability
-- strict response validation and sanitization to block placeholder outputs like `...`, `step1`, or invalid labels
-
-This means the agent can keep a natural chat style while preserving reliable structured triage data.
-
-## Scope Restrictions
-
-The chat agent is intentionally restricted to operations tasks.
-
-- In-scope:
-  - incidents, outages, access requests, troubleshooting, routing, triage workflows
-  - assistant usage/help/status questions
-- Out-of-scope:
-  - general knowledge, personal advice, schoolwork, unrelated coding, and non-operations requests
-
-Out-of-scope prompts are redirected back to operations support use cases.
+- **Ticket Analysis**: Analyzes support tickets using AI (LangChain + OpenAI)
+- **Issue Classification**: Categorizes tickets into server, network, database, application, or access/request
+- **Priority Detection**: Identifies critical, high, medium, or low priority
+- **Team Routing**: Recommends the appropriate team for ticket assignment
+- **Troubleshooting Steps**: Suggests practical, safe troubleshooting steps
+- **Local Logging**: Saves all request/response pairs locally in JSON format
+- **Mock Mode**: Works without API key using keyword-based analysis
 
 ## Architecture
 
-```text
-operational_agent/
-├── backend/
-│   ├── data/
-│   │   └── logs.json
-│   ├── services/
-│   │   ├── agent_skills.py      # deterministic triage fallback logic
-│   │   ├── analyzer.py          # local keyword analyzer
-│   │   ├── identity_skill.py    # fallback identity replies when LLM unavailable
-│   │   ├── logger.py            # JSON logging service
-│   │   ├── ollama_client.py     # local Ollama client
-│   │   └── sample_data.py       # sample tickets
-│   ├── main.py                  # FastAPI app and chat orchestration
-│   ├── schemas.py               # request/response models
-│   └── utils_network.py
+```
+operations_agent/
 ├── frontend/
-│   ├── app.js
-│   ├── index.html
-│   └── style.css
+│   ├── index.html     # Main UI
+│   ├── style.css     # Styles
+│   └── app.js        # Frontend logic
+├── backend/
+│   ├── main.py       # FastAPI application
+│   ├── schemas.py   # Pydantic models
+│   ├── services/
+│   │   ├── analyzer.py    # LangChain ticket analyzer
+│   │   ├── logger.py     # JSON logging service
+│   │   └── sample_data.py # Sample tickets
+│   ├── prompts/
+│   │   └── operations_agent_prompt.txt # System prompt
+│   └── data/
+│       └── logs.json # Analysis logs
 ├── tests/
-│   └── test_api.py
-├── .env
-├── package.json
 ├── requirements.txt
+├── .env.example
 └── README.md
 ```
 
-## Tech Stack
+## Prerequisites
 
-- Backend: FastAPI
-- Frontend: HTML + CSS + vanilla JavaScript
-- Local model runtime: Ollama
-- Log storage: `backend/data/logs.json`
-
-## Environment
-
-Current local config in `.env`:
-
-```env
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=phi3:latest
-```
-
-If `OLLAMA_MODEL` is not set, code default is `llama3.2:3b`.
+- Python 3.9+
+- For AI analysis: OpenAI API key (optional - mock mode available)
 
 ## Setup
 
-### 1. Python dependencies
+### 1. Create Virtual Environment
 
 ```bash
-python3 -m venv venv
+# Create virtual environment
+python -m venv venv
+
+# Activate (Windows)
+venv\Scripts\activate
+
+# Activate (macOS/Linux)
 source venv/bin/activate
+```
+
+### 2. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Frontend dependencies
+### 3. Configure Environment (Optional)
 
 ```bash
-npm install
+# Copy example env file
+copy .env.example .env
+
+# Edit .env and add your OpenAI API key
+# OPENAI_API_KEY=sk-your-api-key-here
 ```
 
-### 3. Start Ollama
+**Note**: Without an API key, the app runs in mock mode with keyword-based analysis.
+
+### 4. Start the Backend
 
 ```bash
-ollama serve
+cd backend
+python main.py
 ```
 
-Optional model check:
+The API will be available at `http://127.0.0.1:8000`
+
+### 5. Start the Frontend
+
+Open `frontend/index.html` in your browser, or use a simple HTTP server:
 
 ```bash
-ollama list
+# Python 3
+python -m http.server 8080 --directory frontend
 ```
 
-### 4. Start backend
-
-```bash
-python3 backend/main.py
-```
-
-Backend URLs:
-
-- API: `http://127.0.0.1:8000`
-- Swagger docs: `http://127.0.0.1:8000/docs`
-
-### 5. Start frontend
-
-```bash
-npm run frontend
-```
-
-Frontend URL:
-
-- `http://127.0.0.1:5173`
-
-Or run both together:
-
-```bash
-npm run dev
-```
+Then visit `http://localhost:8080`
 
 ## API Endpoints
 
-### System
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/analyze-ticket` | POST | Analyze a ticket |
+| `/sample-tickets` | GET | Get sample tickets |
+| `/logs` | GET | Get analysis logs |
+| `/logs/{ticket_id}` | GET | Get specific log |
+| `/logs` | DELETE | Clear logs |
 
-- `GET /health` - backend health status
-- `GET /ollama-status` - Ollama connectivity and configured model
+## Usage
 
-### Ticket Analysis
+1. Open the frontend in your browser
+2. Enter a ticket title and description
+3. Click "Analyze Ticket"
+4. View the classification results
 
-- `POST /analyze-ticket` - triage from title/description payload
-- `GET /sample-tickets` - built-in sample dataset
+Or click on a sample ticket to auto-fill the form.
 
-### Chat
+## Sample Tickets
 
-- `POST /chat` - operations-agent chat and triage
-- `GET /conversation/{conversation_id}` - in-memory conversation retrieval
-- `DELETE /conversation/{conversation_id}` - conversation cleanup
+| ID | Title | Expected Issue | Expected Priority |
+|----|-------|----------------|-------------------|
+| 001 | Unable to connect to database from application | database | high |
+| 002 | VPN users cannot access internal portal | network | high |
+| 003 | Production application returns HTTP 500 | application | critical |
+| 004 | Need access to production server | access/request | medium |
+| 005 | Linux server CPU usage is 98 percent | server | high |
+| 006 | Email password reset request | access/request | low |
+| 007 | Network latency to US-East region | network | medium |
+| 008 | Database replication lag | database | medium |
+| 009 | Application crash on startup | application | high |
+| 010 | Request for admin access to analytics platform | access/request | low |
+| 011 | Web server unreachable | server | critical |
+| 012 | Strange login attempts detected | network | high |
 
-### Logs
-
-- `GET /logs` - list recent logs
-- `GET /logs/{ticket_id}` - fetch single log entry
-- `DELETE /logs` - clear all logs
-
-## Chat Pipeline
-
-For each chat request:
-
-1. Build a skill-based triage baseline.
-2. Query Ollama with a strict JSON contract (`conversation`, `ticket`, or `out_of_scope`).
-3. Validate/normalize model fields.
-4. Reject weak placeholders and invalid enums.
-5. Merge only safe model values into the baseline.
-6. Generate a natural-language assistant message plus structured data for the UI card.
-
-## Reliability and Guardrails
-
-- operations-only scope guard
-- out-of-scope redirect response
-- fallback behavior when Ollama is unavailable
-- sanitizer for weak text (`...`, `step1`, empty fields)
-- typed response models with FastAPI + Pydantic
-
-## Example Requests
-
-### Chat triage request
+## Running Tests
 
 ```bash
-curl -X POST http://127.0.0.1:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Production app is returning HTTP 500 for all users"
-  }'
+# Basic API validation
+python -c "
+import requests
+import json
+
+BASE = 'http://127.0.0.1:8000'
+
+# Test health
+r = requests.get(f'{BASE}/health')
+print('Health:', r.json())
+
+# Test sample tickets
+r = requests.get(f'{BASE}/sample-tickets')
+print('Sample tickets:', len(r.json()))
+
+# Test analyze ticket
+r = requests.post(f'{BASE}/analyze-ticket', json={
+    'title': 'Cannot connect to database',
+    'description': 'Application timeout when connecting to DB'
+})
+print('Analysis result:', json.dumps(r.json(), indent=2))
+"
 ```
 
-### Structured ticket request
+## Configuration
 
-```bash
-curl -X POST http://127.0.0.1:8000/analyze-ticket \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "VPN users cannot access internal portal",
-    "description": "Around 50 remote users affected since morning. Connection is timing out."
-  }'
-```
+### Ollama Model Selection (Auto by OS)
+The backend now auto-selects the default Ollama model based on the operating system:
 
-## Testing
+- Windows: `llama3.2:3b`
+- macOS: `phi3`
+- Linux: `llama3.2:3b`
 
-With backend running:
+You can override this behavior with environment variables:
 
-```bash
-python3 tests/test_api.py
-```
+- `OLLAMA_MODEL` (global override for all OSes)
+- `OLLAMA_MODEL_WINDOWS` (Windows-only override)
+- `OLLAMA_MODEL_MAC` (macOS-only override)
+- `OLLAMA_MODEL_LINUX` (Linux-only override)
 
-This verifies:
+The frontend status badge shows:
 
-- health endpoint
-- sample tickets
-- ticket analysis
-- logs
+- `Online • <model>` when Ollama is connected and the selected model is installed
+- `Connected • Missing <model>` when Ollama is running but that model is not installed
+- `Offline • <model>` when Ollama is not reachable
 
-## Data Persistence
+### Mock Mode
+If no `OPENAI_API_KEY` is set, the app uses keyword-based analysis:
+- Good for demos and testing
+- Uses keyword matching to determine issue type
+- Always returns a result
 
-- analysis logs are persisted in `backend/data/logs.json`
-- conversation memory is in-process only
-- restarting backend clears conversation history
+### Live Mode
+With a valid OpenAI API key:
+- Uses GPT-4 with LangChain
+- More accurate classification
+- Better reasoning and troubleshooting steps
 
-## Known Notes
+## Next Improvements
 
-- startup banner text in `backend/main.py` still mentions `LLaMA 3`, even when `.env` uses `phi3:latest`
-- `requirements.txt` still includes older packages not essential for the current local Ollama flow
-
-## Roadmap Ideas
-
-- persist conversation history to disk/db
-- add automatic model/profile switching by ticket type
-- expose model and scope settings in UI
-- improve test coverage for chat mode and guardrails
+- Add more LLM provider options (Anthropic, local models)
+- Implement ticket history and trending
+- Add team workload balancing
+- Add custom routing rules
+- Add notification integrations (Slack, email)
+- Add dashboard with analytics
+- Implement ticket status tracking
+- Add user authentication

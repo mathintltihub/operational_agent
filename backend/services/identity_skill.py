@@ -13,7 +13,7 @@ SKILL_TRIGGERS = {
 
     "greeting": [
         "hello", "hi", "hey", "hiya", "howdy", "greetings",
-        "good morning", "good afternoon", "good evening", "good night",
+        "good evening", "good night",
         "sup", "what's up", "whats up", "yo", "start", "begin"
     ],
 
