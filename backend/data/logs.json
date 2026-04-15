@@ -1931,5 +1931,92 @@
       "timestamp": "2026-04-14T16:24:58.332539"
     },
     "timestamp": "2026-04-14T16:24:58.332539"
+  },
+  {
+    "ticket_id": "ticket-535303a1",
+    "title": "database issue on production app",
+    "description": "database issue on production app",
+    "analysis_result": {
+      "ticket_id": "ticket-535303a1",
+      "issue_type": "database",
+      "priority": "critical",
+      "impacted_area": "production app",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server status and availability",
+        "Verify network connectivity to database host",
+        "Review database connection pool settings",
+        "Check database logs for errors or warnings",
+        "Verify database credentials and permissions"
+      ],
+      "confidence_score": 0.4,
+      "reasoning_summary": "Unknown analysis required for detailed diagnosis.",
+      "timestamp": "2026-04-14T17:06:12.164615"
+    },
+    "timestamp": "2026-04-14T17:06:12.164615"
+  },
+  {
+    "ticket_id": "ticket-1a831b6c",
+    "title": "Cannot connect to production database",
+    "description": "Our application shows timeout errors when connecting to PostgreSQL. Started 2 hours ago.",
+    "analysis_result": {
+      "ticket_id": "ticket-1a831b6c",
+      "issue_type": "database",
+      "priority": "medium",
+      "impacted_area": "Production Application",
+      "recommended_team": "Database Team",
+      "troubleshooting_steps": [
+        "Check database server status",
+        "Verify PostgreSQL configuration"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "Timeout errors when connecting to PostgreSQL may indicate a connection issue or a problem with the database server.",
+      "timestamp": "2026-04-14T17:16:46.046963"
+    },
+    "timestamp": "2026-04-14T17:16:46.046963",
+    "metadata": {}
+  },
+  {
+    "ticket_id": "ticket-bf6017ba",
+    "title": "VPN users cannot access internal portal",
+    "description": "Remote employees report they cannot connect to the company portal through VPN.",
+    "analysis_result": {
+      "ticket_id": "ticket-bf6017ba",
+      "issue_type": "network",
+      "priority": "medium",
+      "impacted_area": "Remote Employees",
+      "recommended_team": "Network Team",
+      "troubleshooting_steps": [
+        "Check VPN configuration",
+        "Verify DNS resolution",
+        "Monitor network traffic"
+      ],
+      "confidence_score": 0.6,
+      "reasoning_summary": "VPN connectivity issue reported by remote employees. Possible causes include VPN configuration issues, DNS resolution problems, or network congestion.",
+      "timestamp": "2026-04-14T17:17:27.873117"
+    },
+    "timestamp": "2026-04-14T17:17:27.873117",
+    "metadata": {}
+  },
+  {
+    "ticket_id": "ticket-8e12a786",
+    "title": "Need access to production server",
+    "description": "I need sudo access to investigate issues. I have manager approval.",
+    "analysis_result": {
+      "ticket_id": "ticket-8e12a786",
+      "issue_type": "access/request",
+      "priority": "medium",
+      "impacted_area": "production server",
+      "recommended_team": "IT Operations",
+      "troubleshooting_steps": [
+        "Request sudo access",
+        "Verify user's identity"
+      ],
+      "confidence_score": 0.85,
+      "reasoning_summary": "User is requesting sudo access to investigate issues, with manager approval.",
+      "timestamp": "2026-04-14T17:17:49.559425"
+    },
+    "timestamp": "2026-04-14T17:17:49.559425",
+    "metadata": {}
   }
 ]

@@ -38,18 +38,11 @@ from backend.services.ollama_client import (
     get_active_model,
 )
 from backend.services.agent_skills import (
-    classify_issue,
-    detect_priority,
-    route_to_team,
-    suggest_solution,
-    calculate_confidence,
-    get_impacted_area,
-    confidence_to_level,
     execute_skills
 )
+from backend.services.analyzer import conversational_analyzer, build_fallback_conversation
 from backend.services.logger import logger as analysis_logger
 from backend.services.sample_data import SAMPLE_TICKETS
-from backend.services.identity_skill import is_identity_question, get_skill_response
 
 
 # Chatbot-specific schemas
@@ -287,130 +280,65 @@ async def clear_logs():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
-    Chat endpoint for conversational ticket analysis.
-    Uses Ollama (llama3) for intelligent analysis with skill-based fallback.
-    Maintains conversation history and provides chatbot-style responses.
+    Conversational chat endpoint.
+    LLM is primary response engine with skill-based fallback if LLM is empty or low-confidence.
     """
-    import re
-    import json
-
-    # Generate or retrieve conversation ID
     conversation_id = request.conversation_id or f"conv-{uuid.uuid4().hex[:8]}"
 
-    # Get or create conversation history (keep last 3 messages for memory)
     if conversation_id not in conversations:
         conversations[conversation_id] = []
 
-    # Add user message to history
     user_message = ChatMessage(role="user", content=request.message)
     conversations[conversation_id].append(user_message.model_dump())
 
-    # Keep only last 3 messages in memory
-    if len(conversations[conversation_id]) > 6:  # 3 user + 3 assistant
-        conversations[conversation_id] = conversations[conversation_id][-6:]
+    # Keep a larger rolling window for multi-turn context.
+    if len(conversations[conversation_id]) > 40:
+        conversations[conversation_id] = conversations[conversation_id][-40:]
 
-    # --- Identity skill: handle greetings / who-are-you locally ---
-    if is_identity_question(request.message):
-        assistant_message = ChatMessage(role="assistant", content=get_skill_response(request.message))
-        conversations[conversation_id].append(assistant_message.model_dump())
-        return ChatResponse(
-            conversation_id=conversation_id,
-            message=assistant_message,
-            analysis=None
-        )
-
-    # --- Ticket analysis skill: for IT issues ---
     try:
-        # First, use skill-based analysis as fallback
-        skill_result = execute_skills(request.message)
-        confidence = skill_result["confidence"]
-        confidence_score = skill_result["confidence_score"]
+        llm_payload = {
+            "reply": "",
+            "confidence": "low",
+            "source": "llm_disabled",
+            "raw": "",
+        }
 
-        # Try LLM if available and requested
-        llm_result = None
         if request.use_llm and check_ollama_health():
-            try:
-                # Build context from recent conversation
-                context = ""
-                if len(conversations[conversation_id]) > 1:
-                    context = "Recent conversation:\n"
-                    for msg in conversations[conversation_id][-4:]:
-                        context += f"{msg['role']}: {msg['content'][:200]}\n"
+            llm_payload = conversational_analyzer.generate_chat_reply(
+                user_message=request.message,
+                conversation_history=conversations[conversation_id],
+            )
 
-                prompt = f"{SYSTEM_PROMPT}\n\n{context}\n\nUser issue: {request.message}\n\nRespond with ONLY valid JSON."
+        response_text = llm_payload.get("reply", "").strip()
+        fallback_used = False
+        fallback_tags = {}
 
-                llm_response = query_ollama(prompt, timeout=60)
-
-                # Parse LLM response
-                json_match = re.search(r'\{[^{}]*\}', llm_response, re.DOTALL)
-                if json_match:
-                    llm_result = json.loads(json_match.group())
-                    logger.info(f"LLM parsed result: {llm_result}")
-            except Exception as e:
-                logger.warning(f"LLM analysis failed: {e}. Using skill-based result.")
-
-        # Merge results - use LLM if available, otherwise use skills
-        if llm_result:
-            if llm_result.get("issue_type") and llm_result.get("issue_type") != "unknown":
-                if _is_non_empty_text(llm_result.get("issue_type")):
-                    skill_result["issue_type"] = llm_result["issue_type"]
-                if _is_non_empty_text(llm_result.get("priority")):
-                    skill_result["priority"] = llm_result["priority"]
-                if _is_non_empty_text(llm_result.get("assigned_team")):
-                    skill_result["assigned_team"] = llm_result["assigned_team"]
-                if _is_non_empty_text(llm_result.get("impacted_area")):
-                    skill_result["impacted_area"] = llm_result["impacted_area"]
-                if _is_non_empty_steps(llm_result.get("solution_steps")):
-                    skill_result["solution_steps"] = [step for step in llm_result["solution_steps"] if _is_non_empty_text(step)]
-                if _is_non_empty_text(llm_result.get("analysis")):
-                    skill_result["analysis"] = llm_result["analysis"]
-
-                # Convert confidence string to score
-                conf_level = llm_result.get("confidence", "medium") if _is_non_empty_text(llm_result.get("confidence")) else "medium"
-                skill_result["confidence"] = conf_level
-                skill_result["confidence_score"] = 0.85 if conf_level == "high" else 0.6 if conf_level == "medium" else 0.4
-
-        # Build TicketResponse
-        analysis = TicketResponse(
-            ticket_id=f"ticket-{uuid.uuid4().hex[:8]}",
-            issue_type=skill_result["issue_type"],
-            priority=skill_result["priority"],
-            impacted_area=skill_result["impacted_area"],
-            recommended_team=skill_result["assigned_team"],
-            troubleshooting_steps=skill_result["solution_steps"],
-            confidence_score=skill_result["confidence_score"],
-            reasoning_summary=skill_result["analysis"],
-            timestamp=skill_result["timestamp"]
-        )
-
-        # Generate user-friendly response
-        response_text = generate_chatbot_response(analysis)
+        if (not _is_non_empty_text(response_text)) or llm_payload.get("confidence") == "low":
+            skill_result = execute_skills(request.message)
+            fallback_text = build_fallback_conversation(skill_result, request.message)
+            response_text = response_text if _is_non_empty_text(response_text) else fallback_text
+            fallback_used = True
+            fallback_tags = {
+                "issue_type": skill_result.get("issue_type"),
+                "priority": skill_result.get("priority"),
+                "assigned_team": skill_result.get("assigned_team"),
+            }
 
         assistant_message = ChatMessage(role="assistant", content=response_text)
         conversations[conversation_id].append(assistant_message.model_dump())
 
-        # Log the analysis
-        analysis_logger.log_analysis(
-            title=request.message[:50],
-            description=request.message,
-            result=analysis
-        )
-
-        # Build structured response
-        structured = {
-            "issue_type": skill_result["issue_type"],
-            "priority": skill_result["priority"],
-            "assigned_team": skill_result["assigned_team"],
-            "analysis": skill_result["analysis"],
-            "solution_steps": skill_result["solution_steps"],
-            "confidence": skill_result["confidence"]
+        metadata = {
+            "source": llm_payload.get("source", "unknown"),
+            "confidence": llm_payload.get("confidence", "unknown"),
+            "fallback_used": fallback_used,
+            "tags": fallback_tags,
         }
 
         return ChatResponse(
             conversation_id=conversation_id,
             message=assistant_message,
-            analysis=analysis,
-            structured=structured
+            analysis=None,
+            structured=metadata
         )
 
     except Exception as e:
@@ -428,7 +356,7 @@ async def chat(request: ChatRequest):
             conversation_id=conversation_id,
             message=error_message,
             analysis=None,
-            structured=None
+            structured={"source": "runtime_error", "fallback_used": False}
         )
 
 
@@ -451,47 +379,6 @@ async def delete_conversation(conversation_id: str):
         del conversations[conversation_id]
         return {"message": "Conversation deleted"}
     raise HTTPException(status_code=404, detail="Conversation not found")
-
-
-def generate_chatbot_response(analysis: TicketResponse) -> str:
-    """Generate a natural, chatbot-style response from analysis results."""
-
-    priority_emoji = {
-        "critical": "🔴",
-        "high": "🟠",
-        "medium": "🟡",
-        "low": "🟢"
-    }
-
-    issue_emoji = {
-        "server": "🖥️",
-        "network": "🌐",
-        "database": "🗄️",
-        "application": "📱",
-        "access/request": "🔐",
-        "unknown": "❓"
-    }
-
-    priority = analysis.priority
-    issue_type = analysis.issue_type
-
-    response = f"""🔍 **Analysis Complete**
-
-{issue_emoji.get(issue_type, '📋')} *Issue Type:* {issue_type.title()}
-{priority_emoji.get(priority, '⚪')} *Priority:* {priority.upper()}
-👥 *Recommended Team:* {analysis.recommended_team}
-📍 *Impacted Area:* {analysis.impacted_area}
-📊 *Confidence:* {analysis.confidence_score * 100:.0f}%
-
-**Troubleshooting Steps:**
-"""
-
-    for i, step in enumerate(analysis.troubleshooting_steps, 1):
-        response += f"\n{i}. {step}"
-
-    response += f"\n\n💡 *Reasoning:* {analysis.reasoning_summary}"
-
-    return response
 
 
 if __name__ == "__main__":
