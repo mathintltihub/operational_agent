@@ -205,41 +205,6 @@ body {
     text-align: right;
 }
 
-/* Analysis Card in Chat */
-.analysis-card {
-    margin-top: 12px;
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 14px;
-    font-size: 0.9rem;
-}
-
-.analysis-card .analysis-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.analysis-card .analysis-row:last-child {
-    border-bottom: none;
-}
-
-.analysis-card .label {
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.analysis-card .value {
-    font-weight: 600;
-}
-
-.analysis-card .priority-critical { color: var(--critical-color); }
-.analysis-card .priority-high { color: var(--warning-color); }
-.analysis-card .priority-medium { color: #f59e0b; }
-.analysis-card .priority-low { color: var(--success-color); }
-
 .info-list {
     margin: 8px 0;
     padding-left: 20px;
@@ -360,58 +325,6 @@ body {
 @keyframes typing {
     0%, 60%, 100% { transform: translateY(0); }
     30% { transform: translateY(-8px); }
-}
-
-/* Modal */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal.active {
-    display: flex;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 16px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.modal-header h3 {
-    font-size: 1.1rem;
-    color: var(--text-primary);
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-secondary);
-}
-
-.modal-body {
-    padding: 1.5rem;
 }
 
 /* Loading State */

@@ -108,7 +108,7 @@ def test_logs():
 
 
 def test_chat_ticket():
-    """Test chat endpoint for in-scope ticket triage."""
+    """Test chat endpoint for conversational in-scope triage."""
     print("\n[TEST] Chat Ticket Triage")
     try:
         response = requests.post(f'{BASE}/chat', json={
@@ -117,10 +117,11 @@ def test_chat_ticket():
         assert response.status_code == 200
         data = response.json()
         assert 'message' in data
-        assert data.get('analysis') is not None or data.get('structured', {}).get('mode') == 'conversation'
+        assert isinstance(data['message'].get('content'), str)
+        assert len(data['message']['content'].strip()) > 0
         print(f"  Conversation ID: {data['conversation_id']}")
         print(f"  Source: {data.get('structured', {}).get('source', 'n/a')}")
-        print(f"  Runtime mode: {data.get('structured', {}).get('runtime_mode', 'n/a')}")
+        print(f"  Fallback used: {data.get('structured', {}).get('fallback_used', 'n/a')}")
         print("  PASSED")
         return True
     except Exception as e:
@@ -164,7 +165,7 @@ def main():
 
     # Check if backend is running
     try:
-        requests.get(f'{BASE}/health', timeout=2)
+        requests.get(f'{BASE}/health', timeout=6)
     except requests.exceptions.ConnectionError:
         print("\nERROR: Backend is not running!")
         print("Start the backend with: cd backend && python main.py")

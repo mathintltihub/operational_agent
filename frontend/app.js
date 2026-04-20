@@ -16,10 +16,7 @@ const elements = {
     sendBtn: document.getElementById('send-btn'),
     clearChatBtn: document.getElementById('clear-chat-btn'),
     quickActions: document.getElementById('quick-actions'),
-    statusText: document.getElementById('status-text'),
-    analysisModal: document.getElementById('analysis-modal'),
-    modalBody: document.getElementById('modal-body'),
-    modalClose: document.getElementById('modal-close')
+    statusText: document.getElementById('status-text')
 };
 
 // Initialize
@@ -33,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     elements.sendBtn.addEventListener('click', sendMessage);
     elements.clearChatBtn.addEventListener('click', clearChat);
-    elements.modalClose.addEventListener('click', closeModal);
 
     // Quick action buttons
     document.querySelectorAll('.quick-btn').forEach(btn => {
@@ -44,7 +40,7 @@ function setupEventListeners() {
         });
     });
 
-    // Enter to send (Shift+Enter for new line)
+    // Enter sends, Shift+Enter adds newline
     elements.messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -54,13 +50,6 @@ function setupEventListeners() {
 
     // Auto-resize textarea
     elements.messageInput.addEventListener('input', autoResizeTextarea);
-
-    // Close modal on outside click
-    elements.analysisModal.addEventListener('click', (e) => {
-        if (e.target === elements.analysisModal) {
-            closeModal();
-        }
-    });
 }
 
 // Check API health
@@ -145,8 +134,8 @@ async function sendMessage() {
         // Remove typing indicator
         typingIndicator.remove();
 
-        // Add assistant response
-        addMessage('assistant', result.message.content, result.structured || result.analysis);
+        // Add assistant response as natural chat bubble only
+        addMessage('assistant', result.message.content);
 
     } catch (error) {
         typingIndicator.remove();
@@ -160,7 +149,7 @@ async function sendMessage() {
 }
 
 // Add Message to Chat
-function addMessage(role, content, analysis = null) {
+function addMessage(role, content) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}-message`;
 
@@ -187,136 +176,15 @@ function addMessage(role, content, analysis = null) {
 
     elements.chatMessages.appendChild(messageDiv);
     scrollToBottom();
-
-    // Add analysis card if available
-    if (analysis) {
-        setTimeout(() => {
-            addAnalysisCard(analysis);
-        }, 100);
-    }
 }
 
 // Format message content
 function formatMessageContent(content) {
-    // Convert markdown-like formatting to HTML
     return content
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n\n/g, '<br><br>')
-        .replace(/\n/g, '<br>')
-        .replace(/🔍/g, '<span>🔍</span>')
-        .replace(/🔴|🟠|🟡|🟢/g, '<span>$&</span>')
-        .replace(/🖥️|🌐|🗄️|📱|🔐|❓|📋/g, '<span>$&</span>')
-        .replace(/👥|📍|📊|💡/g, '<span>$&</span>');
-}
-
-// Add Analysis Card
-function addAnalysisCard(analysis) {
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'analysis-card';
-
-    // Support both structured (from LLM) and legacy (from skills) formats
-    const issueType = analysis.issue_type || analysis.issue_type;
-    const priority = analysis.priority || analysis.priority;
-    const team = analysis.assigned_team || analysis.recommended_team;
-    const confidenceVal = analysis.confidence_score ? (analysis.confidence_score * 100).toFixed(0) :
-                         (analysis.confidence === 'high' ? '85' : analysis.confidence === 'medium' ? '60' : '40');
-
-    const priorityClass = `priority-${priority}`;
-
-    cardDiv.innerHTML = `
-        <div class="analysis-row">
-            <span class="label">Issue Type</span>
-            <span class="value">${issueType}</span>
-        </div>
-        <div class="analysis-row">
-            <span class="label">Priority</span>
-            <span class="value ${priorityClass}">${priority.toUpperCase()}</span>
-        </div>
-        <div class="analysis-row">
-            <span class="label">Team</span>
-            <span class="value">${team}</span>
-        </div>
-        <div class="analysis-row">
-            <span class="label">Confidence</span>
-            <span class="value">${confidenceVal}%</span>
-        </div>
-        <div style="margin-top: 12px; text-align: center;">
-            <button class="quick-btn" onclick="showAnalysisDetails(${JSON.stringify(analysis).replace(/"/g, '&quot;')})">
-                View Full Details
-            </button>
-        </div>
-    `;
-
-    elements.chatMessages.appendChild(cardDiv);
-    scrollToBottom();
-}
-
-// Show Analysis Details Modal
-window.showAnalysisDetails = function(analysis) {
-    // Support both structured (from LLM) and legacy (from skills) formats
-    const issueType = analysis.issue_type || analysis.issue_type;
-    const priority = analysis.priority || analysis.priority;
-    const team = analysis.assigned_team || analysis.recommended_team;
-    const impactedArea = analysis.impacted_area || 'Not specified';
-    const reasoning = analysis.analysis || analysis.reasoning_summary;
-    const confidenceVal = analysis.confidence_score ? (analysis.confidence_score * 100).toFixed(0) :
-                         (analysis.confidence === 'high' ? '85' : analysis.confidence === 'medium' ? '60' : '40');
-    const steps = analysis.solution_steps || analysis.troubleshooting_steps || [];
-    const ticketId = analysis.ticket_id || 'N/A';
-
-    const priorityClass = `priority-${priority}`;
-
-    elements.modalBody.innerHTML = `
-        <div style="display: grid; gap: 16px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Issue Type</div>
-                    <div style="font-size: 1.1rem; font-weight: 600;">${issueType}</div>
-                </div>
-                <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Priority</div>
-                    <div style="font-size: 1.1rem; font-weight: 600;" class="${priorityClass}">${priority.toUpperCase()}</div>
-                </div>
-            </div>
-            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Impacted Area</div>
-                <div style="font-size: 1.1rem; font-weight: 600;">${impactedArea}</div>
-            </div>
-            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Recommended Team</div>
-                <div style="font-size: 1.1rem; font-weight: 600;">${team}</div>
-            </div>
-            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Confidence Score</div>
-                <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-                    <div style="flex: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
-                        <div style="width: ${confidenceVal}%; height: 100%; background: var(--primary-color); border-radius: 4px;"></div>
-                    </div>
-                    <span style="font-weight: 600;">${confidenceVal}%</span>
-                </div>
-            </div>
-            <div style="padding: 12px; background: var(--bg-color); border-radius: 8px;">
-                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Troubleshooting Steps</div>
-                <ol style="margin: 0; padding-left: 20px;">
-                    ${steps.map(step => `<li style="margin: 6px 0; color: var(--text-primary);">${step}</li>`).join('')}
-                </ol>
-            </div>
-            <div style="padding: 12px; background: var(--primary-light); border-radius: 8px; border-left: 3px solid var(--primary-color);">
-                <div style="font-size: 0.75rem; color: var(--primary-color); text-transform: uppercase; margin-bottom: 4px;">Analysis Reasoning</div>
-                <div style="color: var(--text-primary);">${reasoning}</div>
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 8px;">
-                Ticket ID: ${ticketId}
-            </div>
-        </div>
-    `;
-
-    elements.analysisModal.classList.add('active');
-};
-
-function closeModal() {
-    elements.analysisModal.classList.remove('active');
+        .replace(/\n/g, '<br>');
 }
 
 // Show Typing Indicator

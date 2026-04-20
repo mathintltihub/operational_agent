@@ -4,6 +4,10 @@ Fast, free, and works offline.
 """
 import uuid
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List
+
+from backend.services.ollama_client import query_ollama
 
 
 class LocalTicketAnalyzer:
@@ -226,3 +230,96 @@ class LocalTicketAnalyzer:
 
 # Singleton instance
 analyzer = LocalTicketAnalyzer()
+
+
+class ConversationalAnalyzer:
+    """LLM-first conversational analyzer for natural, multi-turn IT support responses."""
+
+    def __init__(self):
+        self.prompt_path = Path(__file__).parent.parent / "prompts" / "operations_agent_prompt.txt"
+
+    def _load_system_prompt(self) -> str:
+        """Load conversational system prompt from disk with safe fallback."""
+        try:
+            return self.prompt_path.read_text(encoding="utf-8").strip()
+        except Exception:
+            return (
+                "You are an IT Operations AI Assistant. Respond conversationally, ask clarifying "
+                "questions when details are missing, and guide users with safe troubleshooting steps."
+            )
+
+    def _format_history(self, conversation_history: List[Dict[str, str]], max_messages: int = 20) -> str:
+        """Format recent conversation history for the LLM prompt."""
+        if not conversation_history:
+            return "No prior conversation context."
+
+        recent_messages = conversation_history[-max_messages:]
+        lines = []
+        for msg in recent_messages:
+            role = msg.get("role", "user").capitalize()
+            content = (msg.get("content") or "").strip()
+            if content:
+                lines.append(f"{role}: {content}")
+
+        return "\n".join(lines) if lines else "No prior conversation context."
+
+    def _estimate_confidence(self, response_text: str) -> str:
+        """Heuristic confidence signal for fallback orchestration."""
+        text = response_text.lower().strip()
+        if not text:
+            return "low"
+        if len(text) < 60:
+            return "low"
+        weak_signals = ["not sure", "unclear", "cannot determine", "insufficient", "unknown"]
+        if any(signal in text for signal in weak_signals):
+            return "low"
+        if "likely" in text or "probably" in text:
+            return "medium"
+        return "high"
+
+    def generate_chat_reply(self, user_message: str, conversation_history: List[Dict[str, str]]) -> Dict[str, str]:
+        """Generate natural language response from the LLM using conversation context."""
+        system_prompt = self._load_system_prompt()
+        history_block = self._format_history(conversation_history)
+
+        prompt = (
+            f"{system_prompt}\n\n"
+            "Conversation history:\n"
+            f"{history_block}\n\n"
+            "Latest user message:\n"
+            f"{user_message}\n\n"
+            "Assistant response:\n"
+        )
+
+        llm_response = query_ollama(prompt, timeout=90).strip()
+        if not llm_response or llm_response.startswith("[ERROR]"):
+            return {
+                "reply": "",
+                "confidence": "low",
+                "source": "llm_error",
+                "raw": llm_response,
+            }
+
+        return {
+            "reply": llm_response,
+            "confidence": self._estimate_confidence(llm_response),
+            "source": "llm",
+            "raw": llm_response,
+        }
+
+
+def build_fallback_conversation(skill_result: dict, user_message: str) -> str:
+    """Create a natural fallback reply when LLM output is empty or low-confidence."""
+    issue_type = skill_result.get("issue_type", "unknown")
+    priority = skill_result.get("priority", "medium")
+    steps = skill_result.get("solution_steps", [])[:3]
+    step_text = " ".join([f"Step {idx + 1}: {step}." for idx, step in enumerate(steps)])
+
+    return (
+        f"Thanks for the details. Based on what you shared, this looks like a {issue_type} issue "
+        f"with {priority} urgency. Let us work through it together. {step_text} "
+        "Can you share the exact error message and whether this affects one user or multiple users?"
+    )
+
+
+conversational_analyzer = ConversationalAnalyzer()
