@@ -1931,5 +1931,28 @@
       "timestamp": "2026-04-14T16:24:58.332539"
     },
     "timestamp": "2026-04-14T16:24:58.332539"
+  },
+  {
+    "ticket_id": "ticket-f836755d",
+    "title": "hell",
+    "description": "hell",
+    "analysis_result": {
+      "ticket_id": "ticket-f836755d",
+      "issue_type": "unknown",
+      "priority": "medium",
+      "impacted_area": "Unclear impact, needs clarification",
+      "recommended_team": "Manual Review Queue",
+      "troubleshooting_steps": [
+        "Collect error message, timeline, and affected systems before routing.",
+        "Ask for impact scope: number of users, environments, and services.",
+        "Request logs or screenshots to reduce ambiguity.",
+        "Route to Manual Review if classification remains unclear."
+      ],
+      "confidence_score": 0.35,
+      "reasoning_summary": "Classified as unknown with medium priority from signals: general incident indicators. Confidence is 35%.",
+      "timestamp": "2026-04-15T03:36:14.148972"
+    },
+    "timestamp": "2026-04-15T03:36:14.148972",
+    "metadata": {}
   }
 ]
